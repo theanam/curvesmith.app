@@ -266,112 +266,121 @@ export function Home() {
         </div>
       </aside>
       <main className="home-main">
-        <header className="home-head">
-          <h1>
-            {section === 'home'
-              ? 'Start something'
-              : section === 'files'
-                ? 'Files on this device'
-                : 'Libraries'}
-          </h1>
-          <label className="home-search">
-            <Icon name="search" size={15} />
-            <input
-              placeholder="Search files and templates"
-              aria-label="Search files and templates"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
-            <span className="kbd">{formatShortcut('Mod+K')}</span>
-          </label>
-        </header>
+        <div className="home-content">
+          <header className="home-head">
+            <h1>
+              {section === 'home'
+                ? 'Start something'
+                : section === 'files'
+                  ? 'Files on this device'
+                  : 'Libraries'}
+            </h1>
+            <label className="home-search">
+              <Icon name="search" size={15} />
+              <input
+                placeholder="Search files and templates"
+                aria-label="Search files and templates"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <span className="kbd">{formatShortcut('Mod+K')}</span>
+            </label>
+          </header>
 
-        {section === 'home' && (
-          <>
-            <h2>New document</h2>
-            <div className="presets">
-              {filteredPresets.map((p) => (
-                <button key={p.id} className="preset" onClick={() => createFromPreset(p)} data-preset={p.id}>
-                  <PresetThumb p={p} />
-                  <strong>{p.name}</strong>
-                  <span className="mono muted">{p.label}</span>
-                </button>
-              ))}
-              <button className="preset custom" onClick={() => openDialog('customSize')}>
-                <div className="preset-thumb plain">
-                  <Icon name="plus" size={22} stroke={1.4} />
-                </div>
-                <strong>Custom size</strong>
-                <span className="mono muted">mm · in · px · pt</span>
-              </button>
-            </div>
-            <DropZone />
-            <div className="section-head">
-              <h2>Recent</h2>
-              {filteredRecent.length > 4 && (
-                <button className="link-btn" onClick={() => setShowAll(!showAll)}>
-                  {showAll ? 'Show less' : 'Show all'}
-                </button>
-              )}
-            </div>
-            {filteredRecent.length ? (
-              <div className="file-grid">
-                {(showAll ? filteredRecent : filteredRecent.slice(0, 4)).map((r) => (
-                  <FileCard
-                    key={r.id}
-                    title={r.name}
-                    meta={`${r.ext} · edited ${ago(r.modified)}`}
-                    thumb={r.thumbnail}
-                    onOpen={() => void openRecent(r)}
-                    onRemove={() => void removeRecent(r.id)}
-                  />
+          {section === 'home' && (
+            <>
+              <h2>New document</h2>
+              <div className="presets">
+                {filteredPresets.map((p) => (
+                  <button
+                    key={p.id}
+                    className="preset"
+                    onClick={() => createFromPreset(p)}
+                    data-preset={p.id}
+                  >
+                    <PresetThumb p={p} />
+                    <strong>{p.name}</strong>
+                    <span className="mono muted">{p.label}</span>
+                  </button>
                 ))}
-              </div>
-            ) : (
-              <div className="empty-files">
-                <span className="muted">Files you open or save appear here.</span>
-                <button className="btn" onClick={() => setState({ homeSection: 'libraries' })}>
-                  <Icon name="libraries" /> Open a sample
+                <button className="preset custom" onClick={() => openDialog('customSize')}>
+                  <div className="preset-thumb plain">
+                    <Icon name="plus" size={22} stroke={1.4} />
+                  </div>
+                  <strong>Custom size</strong>
+                  <span className="mono muted">mm · in · px · pt</span>
                 </button>
               </div>
-            )}
-          </>
-        )}
-
-        {section === 'files' && (
-          <>
-            <p className="muted lede">Autosaved copies live in this browser, with their full undo history.</p>
-            {saved.length ? (
-              <div className="file-grid">
-                {saved
-                  .filter((s) => !query || s.name.toLowerCase().includes(query))
-                  .map((s) => (
+              <DropZone />
+              <div className="section-head">
+                <h2>Recent</h2>
+                {filteredRecent.length > 4 && (
+                  <button className="link-btn" onClick={() => setShowAll(!showAll)}>
+                    {showAll ? 'Show less' : 'Show all'}
+                  </button>
+                )}
+              </div>
+              {filteredRecent.length ? (
+                <div className="file-grid">
+                  {(showAll ? filteredRecent : filteredRecent.slice(0, 4)).map((r) => (
                     <FileCard
-                      key={s.id}
-                      title={s.name}
-                      meta={`${s.ext} · saved ${ago(s.modified)}`}
-                      thumb={s.thumbnail}
-                      onOpen={() => void openAutosave(s.id)}
-                      onRemove={() => void deleteAutosave(s.id)}
+                      key={r.id}
+                      title={r.name}
+                      meta={`${r.ext} · edited ${ago(r.modified)}`}
+                      thumb={r.thumbnail}
+                      onOpen={() => void openRecent(r)}
+                      onRemove={() => void removeRecent(r.id)}
                     />
                   ))}
-              </div>
-            ) : (
-              <span className="muted">Nothing saved yet.</span>
-            )}
-          </>
-        )}
+                </div>
+              ) : (
+                <div className="empty-files">
+                  <span className="muted">Files you open or save appear here.</span>
+                  <button className="btn" onClick={() => setState({ homeSection: 'libraries' })}>
+                    <Icon name="libraries" /> Open a sample
+                  </button>
+                </div>
+              )}
+            </>
+          )}
 
-        {section === 'libraries' && (
-          <>
-            <h2>Starter files</h2>
-            <div className="file-grid">
-              {SAMPLES.filter((s) => !query || s.name.toLowerCase().includes(query)).map((s) => (
-                <SampleCard key={s.id} sample={s} />
-              ))}
-            </div>
-          </>
-        )}
+          {section === 'files' && (
+            <>
+              <p className="muted lede">
+                Autosaved copies live in this browser, with their full undo history.
+              </p>
+              {saved.length ? (
+                <div className="file-grid">
+                  {saved
+                    .filter((s) => !query || s.name.toLowerCase().includes(query))
+                    .map((s) => (
+                      <FileCard
+                        key={s.id}
+                        title={s.name}
+                        meta={`${s.ext} · saved ${ago(s.modified)}`}
+                        thumb={s.thumbnail}
+                        onOpen={() => void openAutosave(s.id)}
+                        onRemove={() => void deleteAutosave(s.id)}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <span className="muted">Nothing saved yet.</span>
+              )}
+            </>
+          )}
+
+          {section === 'libraries' && (
+            <>
+              <h2>Starter files</h2>
+              <div className="file-grid">
+                {SAMPLES.filter((s) => !query || s.name.toLowerCase().includes(query)).map((s) => (
+                  <SampleCard key={s.id} sample={s} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

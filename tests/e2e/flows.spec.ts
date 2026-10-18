@@ -219,3 +219,29 @@ test('eyedropper picks colors from a placed image, with a loupe', async ({ app: 
   );
   expect(Math.round(fill.b * 255)).toBe(0xf6);
 });
+
+test('the start screen does not scroll when its content fits, and scrolls at the window edge', async ({
+  app: page,
+}) => {
+  await page.setViewportSize({ width: 1728, height: 820 });
+  await page.evaluate(async () => {
+    const storage = '/src/state/storage.ts';
+    const { idbSet } = await import(/* @vite-ignore */ storage);
+    for (let i = 0; i < 4; i++)
+      await idbSet('recent', 'r' + i, {
+        id: 'r' + i,
+        name: 'File ' + i,
+        ext: '.curvs',
+        modified: Date.now(),
+        thumbnail: null,
+        handle: null,
+      });
+    window.dispatchEvent(new Event('curvesmith:recent'));
+  });
+  await expect(page.getByRole('button', { name: 'Open File 3' })).toBeVisible();
+  const m = await page
+    .locator('.home-main')
+    .evaluate((e) => ({ overflow: e.scrollHeight - e.clientHeight, right: e.getBoundingClientRect().right }));
+  expect(m.overflow).toBeLessThanOrEqual(0);
+  expect(m.right).toBe(1728);
+});

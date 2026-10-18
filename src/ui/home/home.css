@@ -82,9 +82,20 @@
 
 .home-main {
   flex: 1;
-  overflow: auto;
-  padding: 40px 56px 64px;
+  min-width: 0;
+  /* The whole area scrolls (scrollbar at the window edge), and only when content is taller. */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.home-content {
   max-width: 1220px;
+  padding: 40px 56px 16px;
+}
+
+/* No trailing space that would make a page that fits scroll anyway. */
+.home-content > :last-child {
+  margin-bottom: 0;
 }
 
 .home-head {
@@ -400,8 +411,10 @@
     padding: 0;
   }
   .home-main {
-    padding: 24px 16px 48px;
     overflow: visible;
+  }
+  .home-content {
+    padding: 24px 16px 32px;
   }
   .home-head {
     flex-direction: column;
