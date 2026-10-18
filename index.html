@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Curvesmith · Vector design in your browser</title>
+    <meta name="description" content="Curvesmith is a professional vector editor that runs in your browser. Pen, booleans, gradients, Google Fonts, SVG, PDF and DXF export. No install, no account, files stay on your device." />
+    <meta name="keywords" content="vector editor, online vector editor, SVG editor, illustrator alternative, pen tool, bezier, logo design, PDF, DXF, browser design tool" />
+    <meta name="application-name" content="Curvesmith" />
+    <meta name="apple-mobile-web-app-title" content="Curvesmith" />
+    <meta name="author" content="Anam Ahmed" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F7F6F3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141317" media="(prefers-color-scheme: dark)" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://curvesmith.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Curvesmith" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Curvesmith · Vector design in your browser" />
+    <meta property="og:description" content="A professional vector editor that opens in a browser tab. Pen, live booleans, gradients, every Google Font, SVG/PDF/DXF export. Your files never leave your device." />
+    <meta property="og:url" content="https://curvesmith.app/" />
+    <meta property="og:image" content="https://curvesmith.app/og-image.png" />
+    <meta property="og:image:secure_url" content="https://curvesmith.app/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Curvesmith editor with a poster being edited with the Node tool" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Curvesmith · Vector design in your browser" />
+    <meta name="twitter:description" content="A professional vector editor that opens in a browser tab. Files stay on your device." />
+    <meta name="twitter:image" content="https://curvesmith.app/og-image.png" />
+    <meta name="twitter:image:alt" content="The Curvesmith editor with a poster being edited with the Node tool" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preload" href="/fonts/geist-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Curvesmith",
+        "url": "https://curvesmith.app/",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Any (web browser)",
+        "description": "A professional vector editor that runs in your browser. Files stay on your device.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Anam Ahmed" },
+        "image": "https://curvesmith.app/og-image.png"
+      }
+    </script>
+    <style>
+      html, body { margin: 0; height: 100%; background: #f7f6f3; }
+      @media (prefers-color-scheme: dark) { html:not([data-theme='light']), html:not([data-theme='light']) body { background: #141317; } }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; }
+      #boot svg { width: 56px; height: 56px; animation: boot 1.2s ease-in-out infinite alternate; }
+      @keyframes boot { to { opacity: 0.4; } }
+    </style>
+  </head>
+  <body>
+    <div id="boot" aria-hidden="true">
+      <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#1A1820"/><path d="M45 21C39 13.5 22 13 17.5 27C13 41 26 53 41 47" stroke="#16C75B" stroke-width="7" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div id="root"></div>
+    <noscript>
+      <h1>Curvesmith</h1>
+      <p>Curvesmith is a professional vector editor that runs in your browser: pen and node tools, live boolean shapes, gradients, Google Fonts, and SVG, PDF, AI, EPS, DXF, EMF and PNG export. It needs JavaScript to run.</p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

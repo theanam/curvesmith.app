@@ -1,0 +1,229 @@
+{
+  "note": "Toolbar order, shortcuts, context-bar hints and 24px stroke icons, exactly as in the Editor mockup. Node tool has its own context bar (see SPEC).",
+  "tools": [
+    {
+      "id": "move",
+      "label": "Move",
+      "shortcut": "V",
+      "groupStart": false,
+      "hint": "Drag to move · ⇧ constrains · ⌥-drag duplicates · double-click a group to enter it",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M5 3l13 7-6 1.5L9.5 18z",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "node",
+      "label": "Node",
+      "shortcut": "A",
+      "groupStart": false,
+      "hint": null,
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M5 3l13 7-6 1.5L9.5 18zM15 15h5v5h-5z",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "pen",
+      "label": "Pen",
+      "shortcut": "P",
+      "groupStart": true,
+      "hint": "Click for corners · drag for curves · ⌥ breaks a handle · click the first anchor to close",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M3 21l4-11 7-7 7 7-7 7zM3 21l7-7M11.5 12.5a1.5 1.5 0 1 0 0.01 0",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "pencil",
+      "label": "Pencil",
+      "shortcut": "N",
+      "groupStart": false,
+      "hint": "Draw freehand: strokes are fitted to clean Béziers as you go · Smoothing 40%",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M4 20l1-4L16 5l3 3L8 19zM14 7l3 3",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "scissors",
+      "label": "Scissors",
+      "shortcut": "C",
+      "groupStart": false,
+      "hint": "Click a path to cut it there · drag across to slice through everything",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M6 3a3 3 0 1 0 0 6a3 3 0 1 0 0-6M6 15a3 3 0 1 0 0 6a3 3 0 1 0 0-6M8.5 7.5L20 18M8.5 16.5L20 6",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "builder",
+      "label": "Shape builder",
+      "shortcut": "⇧M",
+      "groupStart": true,
+      "hint": "Drag across regions to merge them · ⌥-drag to erase regions",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M9 4a5 5 0 1 0 0 10a5 5 0 1 0 0-10M15 10a5 5 0 1 0 0 10a5 5 0 1 0 0-10",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "rect",
+      "label": "Rectangle",
+      "shortcut": "M",
+      "groupStart": false,
+      "hint": "Drag to draw · ⇧ for a square · drag a corner widget to round corners",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M4 6h16v12H4z",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "ellipse",
+      "label": "Ellipse",
+      "shortcut": "L",
+      "groupStart": false,
+      "hint": "Drag to draw · ⇧ for a circle · drag the arc handle to make a pie",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M3 12a9 6 0 1 0 18 0a9 6 0 1 0-18 0",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "star",
+      "label": "Star & polygon",
+      "shortcut": "*",
+      "groupStart": false,
+      "hint": "Drag to draw · ↑ ↓ change points · drag the inner handle for depth",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "text",
+      "label": "Text",
+      "shortcut": "T",
+      "groupStart": true,
+      "hint": "Click for a text line · drag for a text box · click a path to type along it",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M5 7V4h14v3M12 4v16M9 20h6",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "gradient",
+      "label": "Gradient",
+      "shortcut": "G",
+      "groupStart": true,
+      "hint": "Drag on a fill to set direction · double-click the line to add a stop",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M4 4h16v16H4zM4 20L20 4",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "eyedropper",
+      "label": "Eyedropper",
+      "shortcut": "I",
+      "groupStart": false,
+      "hint": "Click to pick a color · click an object to copy its look onto the selection · ⇧-click picks color only",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M2 22l1-1h3l9-9M3 21v-3l9-9M15 6l3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4z",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "hand",
+      "label": "Hand",
+      "shortcut": "H",
+      "groupStart": true,
+      "hint": "Drag to pan · hold Space with any tool",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8c0 4-3 7-6.5 7S5 18 4 15l-1-3a1.5 1.5 0 0 1 2.6-1.4L8 13",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    },
+    {
+      "id": "zoom",
+      "label": "Zoom",
+      "shortcut": "Z",
+      "groupStart": false,
+      "hint": "Click to zoom in · ⌥-click to zoom out · drag a marquee to fit",
+      "icon": {
+        "viewBox": "0 0 24 24",
+        "d": "M10 4a6 6 0 1 0 0 12a6 6 0 1 0 0-12M14.5 14.5L20 20",
+        "stroke": "currentColor",
+        "strokeWidth": 1.6,
+        "fill": "none",
+        "linecap": "round",
+        "linejoin": "round"
+      }
+    }
+  ]
+}

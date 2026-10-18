@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200mm" height="100mm" viewBox="0 0 400 200">
+  <style>
+    .teal { fill: #2b5f6b; }
+    #star, .outlined { stroke: navy; stroke-width: 3; }
+    g.layer > circle { fill: rgb(255, 0, 0); }
+    a:hover { fill: red; }
+  </style>
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff0000"/>
+      <stop offset="100%" stop-color="#0000ff" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="lg2" xlink:href="#lg" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="110" y2="0"/>
+    <radialGradient id="rg" cx="50%" cy="50%" r="50%">
+      <stop offset="0" style="stop-color: white"/>
+      <stop offset="1" style="stop-color: black"/>
+    </radialGradient>
+    <clipPath id="clip"><rect x="300" y="100" width="50" height="50"/></clipPath>
+    <mask id="m"><rect width="10" height="10" fill="white"/></mask>
+    <filter id="f"><feGaussianBlur stdDeviation="2"/></filter>
+    <symbol id="sym" viewBox="0 0 10 10"><rect width="10" height="10" fill="orange"/></symbol>
+    <pattern id="pat" width="4" height="4"><rect width="2" height="2"/></pattern>
+  </defs>
+  <rect id="bg" class="teal" x="10" y="10" width="100" height="50" rx="8"/>
+  <circle cx="200" cy="40" r="30" fill="url(#rg)"/>
+  <ellipse cx="300" cy="40" rx="40" ry="20" fill="url(#lg)" stroke="#000" stroke-width="2" stroke-dasharray="4 2" stroke-linecap="round"/>
+  <g class="layer" id="Layer_1" transform="translate(0 80)" opacity="0.5">
+    <circle cx="30" cy="30" r="20"/>
+    <line x1="60" y1="10" x2="120" y2="50" stroke="green" stroke-width="4"/>
+    <polyline points="130,10 150,50 170,10" fill="none" stroke="currentColor" color="purple"/>
+    <polygon id="star" points="200,10 210,40 240,40 215,55 225,85 200,65 175,85 185,55 160,40 190,40" fill="gold" fill-rule="evenodd"/>
+  </g>
+  <path d="M10 150 C 40 120, 80 180, 110 150 S 170 120, 190 150 Z" style="fill:#abcdef;fill-opacity:0.8" class="outlined"/>
+  <rect x="10" y="160" width="100" height="20" fill="url(#lg2)" transform="rotate(5 60 170)"/>
+  <rect x="290" y="90" width="80" height="80" fill="crimson" clip-path="url(#clip)"/>
+  <use xlink:href="#sym" x="200" y="150" width="30" height="30"/>
+  <use href="#bg" x="0" y="0" transform="translate(380 0) scale(0.1)"/>
+  <rect x="0" y="0" width="5" height="5" mask="url(#m)" filter="url(#f)" fill="url(#pat) #333"/>
+  <text x="250" y="190" font-family="'Geist', sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#123456">Hello <tspan>world</tspan></text>
+  <image x="370" y="170" width="20" height="20" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="/>
+  <image x="0" y="0" width="10" height="10" href="https://example.com/a.png"/>
+  <foreignObject width="10" height="10"/>
+</svg>

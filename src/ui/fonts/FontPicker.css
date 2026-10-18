@@ -1,0 +1,229 @@
+/* Font picker: family field + popover list, and the weight/style field. Tokens only. */
+
+.cs-fp {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.cs-fp-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--field);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--motion-fast) var(--ease);
+}
+.cs-fp-field:hover {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.cs-fp-field[data-state='open'],
+.cs-fp-field:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.cs-fp-trigger .cs-fp-value {
+  font-size: var(--text-lg);
+}
+
+.cs-fp-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.cs-fp-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--muted);
+}
+.cs-fp-icon-wrap {
+  display: flex;
+}
+.cs-fp-check {
+  color: var(--accent);
+}
+
+/* Popover surface (shared by the family list and the style menu) */
+.cs-fp-pop {
+  z-index: 50;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  font-family: var(--font-ui);
+  font-size: var(--text-md);
+}
+.cs-fp-pop:focus {
+  outline: none;
+}
+
+.cs-fp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(320px, calc(100vw - var(--space-4)));
+  padding: var(--space-2);
+}
+
+.cs-fp-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--field);
+}
+.cs-fp-search:focus-within {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.cs-fp-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  outline: none;
+}
+.cs-fp-search input::placeholder {
+  color: var(--muted);
+}
+
+.cs-fp-chips {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--field);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cs-fp-chips::-webkit-scrollbar {
+  display: none;
+}
+.cs-fp-chip {
+  flex: none;
+  height: 24px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.cs-fp-chip:hover {
+  color: var(--fg);
+}
+.cs-fp-chip[aria-pressed='true'] {
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.cs-fp-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cs-fp-list {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.cs-fp-list:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.cs-fp-sizer {
+  position: relative;
+}
+
+.cs-fp-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.cs-fp-row[data-highlighted] {
+  background: var(--hover);
+}
+.cs-fp-row[aria-selected='true'] {
+  background: var(--accent-soft);
+}
+.cs-fp-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--text-lg);
+  line-height: 1.2;
+}
+.cs-fp-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.cs-fp-empty {
+  padding: var(--space-3) var(--space-2);
+  color: var(--muted);
+}
+
+/* Style menu */
+.cs-fp-select {
+  min-width: var(--radix-select-trigger-width);
+  max-height: min(320px, var(--radix-select-content-available-height));
+  overflow: hidden;
+}
+.cs-fp-select-viewport {
+  padding: var(--space-1);
+}
+.cs-fp-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  user-select: none;
+}
+.cs-fp-select-item[data-highlighted] {
+  background: var(--hover);
+}
+.cs-fp-select-indicator {
+  display: flex;
+}

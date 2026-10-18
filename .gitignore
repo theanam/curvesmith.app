@@ -1,0 +1,10 @@
+curvesmith-handoff/
+node_modules/
+dist/
+dev-dist/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+*.log
+.vite/

@@ -1,0 +1,157 @@
+/* Curvesmith design tokens: the single source of truth for app chrome colors, type and spacing.
+   Theme: follows the OS by default; the user can force one with <html data-theme="light|dark">. */
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/fonts/bricolage-grotesque-latin-standard-normal.woff2') format('woff2');
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/geist-latin-600-normal.woff2') format('woff2');
+  font-weight: 600 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/geist-mono-latin-500-normal.woff2') format('woff2');
+  font-weight: 500 600;
+  font-display: swap;
+}
+
+:root {
+  /* Brand constants (never change with theme) */
+  --cs-ink: #1a1820;
+  --cs-paper: #f6f4ef;
+  --cs-volt: #16c75b; /* primary / brand green: fills, primary buttons, on-canvas selection */
+  --cs-volt-deep: #0b9a47; /* green text + icons on light surfaces (>= 3:1 on white) */
+  --cs-volt-bright: #3bdc78; /* green text + icons on dark surfaces */
+  --cs-night: #141317;
+  --cs-ash: #66626d;
+  --cs-smoke: #e6e3dd;
+  --cs-on-volt: #1a1820; /* text on a Volt fill is ALWAYS ink, never white */
+
+  /* Type */
+  --font-display: 'Bricolage Grotesque', 'Helvetica Neue', sans-serif;
+  --font-ui: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --text-xs: 11px; /* status bar, kbd hints, rulers (9px) */
+  --text-sm: 12px; /* panel section headers, secondary */
+  --text-md: 13px; /* default UI text */
+  --text-lg: 15px; /* dialog section titles */
+  --text-xl: 22px; /* dialog titles (display font) */
+  --text-2xl: 40px; /* start screen heading (display font) */
+
+  /* Spacing (4px base) and shape */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 6px; /* inputs, small buttons */
+  --radius-md: 8px; /* buttons, tabs, list rows */
+  --radius-lg: 12px; /* cards */
+  --radius-xl: 16px; /* dialogs */
+
+  /* Fixed chrome dimensions (match mockups) */
+  --topbar-h: 48px;
+  --contextbar-h: 40px;
+  --toolbar-w: 76px; /* two columns of tools */
+  --tool-btn: 34px;
+  --inspector-w: 304px;
+  --layers-h: 262px;
+  --statusbar-h: 28px;
+  --ruler: 20px;
+  --control-h: 30px;
+
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Light (default) */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f7f6f3;
+  --panel: #ffffff;
+  --line: #e6e3dd;
+  --fg: #1a1820;
+  --muted: #66626d;
+  --paste: #e7e5e0; /* pasteboard around artboards */
+  --hover: #f0eeea;
+  --field: #f3f1ee; /* input + segmented-control wells */
+  --accent: var(--cs-volt-deep);
+  --accent-soft: rgba(22, 199, 91, 0.16);
+  --rule: #c9c5ce; /* ruler ticks */
+  --selection: var(--cs-volt);
+  --shadow-artboard: 0 1px 2px rgba(26, 24, 32, 0.08), 0 18px 40px rgba(26, 24, 32, 0.14);
+  --shadow-pop: 0 30px 80px rgba(26, 24, 32, 0.25);
+}
+
+/* Dark: explicit choice */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #141317;
+  --panel: #1c1b20;
+  --line: #2d2b32;
+  --fg: #edebe7;
+  --muted: #a19da8;
+  --paste: #0f0e11;
+  --hover: #27252c;
+  --field: #26242b;
+  --accent: var(--cs-volt-bright);
+  --accent-soft: rgba(59, 220, 120, 0.18);
+  --rule: #4a4751;
+  --selection: var(--cs-volt);
+  --shadow-artboard: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 48px rgba(0, 0, 0, 0.6);
+  --shadow-pop: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Dark: following the OS when the user has not chosen */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #141317;
+    --panel: #1c1b20;
+    --line: #2d2b32;
+    --fg: #edebe7;
+    --muted: #a19da8;
+    --paste: #0f0e11;
+    --hover: #27252c;
+    --field: #26242b;
+    --accent: var(--cs-volt-bright);
+    --accent-soft: rgba(59, 220, 120, 0.18);
+    --rule: #4a4751;
+    --shadow-artboard: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 48px rgba(0, 0, 0, 0.6);
+    --shadow-pop: 0 30px 80px rgba(0, 0, 0, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}
