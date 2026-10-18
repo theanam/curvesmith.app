@@ -263,7 +263,7 @@ const SLIDES: Slide[] = [
     title: 'Fields that do math',
     points: [
       <>Type 120/3, +12, 50% or 10mm in any field.</>,
-      <>Drag a field’s label to scrub. ⇧ for coarse steps, ⌥ for fine.</>,
+      <>Step with the arrows beside a field, or pick a preset. ⇧ for coarse steps, ⌥ for fine.</>,
     ],
     visual: <NumbersArt />,
   },

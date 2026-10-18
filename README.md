@@ -44,7 +44,7 @@ No install, no account, and your files never leave your device.
 **Working fast**
 - **Live booleans** (union, subtract, intersect, exclude) that stay editable, plus Divide, compound paths and clip groups.
 - **Smart guides and HUD**: snapping to edges, centers, nodes, guides and the pixel grid, with labels like “3 nodes aligned” and live coordinates.
-- **Numeric fields that do math**: `120/3`, `+12`, `50%`, `10mm`. Drag a label to scrub.
+- **Numeric fields that do math**: `120/3`, `+12`, `50%`, `10mm`. Step with the arrows, or pick a preset in ranged fields.
 - **Command palette** (⌘K / Ctrl+K) over tools, commands, layers, colors and recent files.
 - **Unlimited undo** with a history panel. History survives reloads through autosave.
 

@@ -211,3 +211,51 @@ describe('document colors', () => {
     expect((fill() as { paint: { color: { swatch?: string } } }).paint.color.swatch).toBe('sw_t');
   });
 });
+
+describe('number fields', () => {
+  it('generates round preset values for bounded ranges', async () => {
+    const { rangeOptions } = await import('../../src/ui/controls/NumberField');
+    expect(rangeOptions(0, 6)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(rangeOptions(0, 100)).toEqual([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+    expect(rangeOptions(0, 98)[0]).toBe(0);
+    expect(rangeOptions(0, 98).at(-1)).toBe(98);
+  });
+
+  it('unbounded fields step with the arrow buttons; bounded fields offer presets', async () => {
+    let v = 10;
+    const { rerender } = render(<NumberField label="X" ariaLabel="X" value={v} onChange={(n) => (v = n)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Increase X' }), { detail: 0 });
+    expect(v).toBe(11);
+    fireEvent.click(screen.getByRole('button', { name: 'Decrease X' }), { detail: 0, shiftKey: true });
+    expect(v).toBe(1);
+    expect(screen.queryByRole('button', { name: 'X presets' })).toBeNull();
+    rerender(
+      <NumberField
+        label="Op."
+        ariaLabel="Opacity"
+        value={50}
+        min={0}
+        max={100}
+        unit="%"
+        onChange={(n) => (v = n)}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Increase Opacity' })).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: 'Opacity presets' }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: '30%' }));
+    expect(v).toBe(30);
+  });
+
+  it('⌘Z in a field with nothing typed undoes the document change', async () => {
+    freshDoc();
+    Object.defineProperty(window, 'innerWidth', { value: 1440, configurable: true });
+    render(<App />);
+    const w = screen.getByRole('textbox', { name: 'Artboard width' });
+    const before = getState().docs[0].doc.artboards[0].width;
+    await userEvent.click(w);
+    fireEvent.keyDown(w, { key: 'ArrowUp' });
+    expect(getState().docs[0].doc.artboards[0].width).toBeGreaterThan(before);
+    fireEvent.keyDown(w, { key: 'z', ctrlKey: true, metaKey: true });
+    expect(getState().docs[0].doc.artboards[0].width).toBe(before);
+  });
+});

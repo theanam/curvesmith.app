@@ -103,6 +103,7 @@ const REF_POINTS: [number, number][] = [
 ];
 
 let refPoint: [number, number] = [0, 0];
+export const STAR_POINTS = [3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20, 24, 32];
 
 /** 9-point reference picker (which point W, H and rotation edits keep fixed), in a small popover. */
 function RefPointPicker({
@@ -204,6 +205,19 @@ function TransformSection({ od }: { od: OpenDoc }) {
         <h3>Transform</h3>
         <div className="actions">
           <RefPointPicker value={ref} onChange={(p) => ((refPoint = p), setRef(p))} />
+          <Tip label={lock ? 'Proportions locked' : 'Lock proportions'}>
+            <button
+              className="icon-btn sm"
+              aria-pressed={lock}
+              aria-label="Lock proportions"
+              onClick={() => {
+                lockRatio = !lock;
+                setLock(!lock);
+              }}
+            >
+              <Icon name={lock ? 'link' : 'unlink'} size={14} />
+            </button>
+          </Tip>
           <AlignButtons count={ids.length} />
         </div>
       </div>
@@ -243,22 +257,6 @@ function TransformSection({ od }: { od: OpenDoc }) {
           min={0}
           percentOf={fromPt(b.height, unit)}
           onChange={(v) => setSize(null, toPt(v, unit))}
-          suffix={
-            <Tip label={lock ? 'Proportions locked' : 'Lock proportions'}>
-              <button
-                className="field-suffix"
-                aria-pressed={lock}
-                aria-label="Lock proportions"
-                onClick={(e) => {
-                  e.preventDefault();
-                  lockRatio = !lock;
-                  setLock(!lock);
-                }}
-              >
-                <Icon name={lock ? 'link' : 'unlink'} size={13} />
-              </button>
-            </Tip>
-          }
         />
         <NumberField
           label="∠"
@@ -596,6 +594,7 @@ function ShapeSection({ od }: { od: OpenDoc }) {
           <NumberField
             label="Pts"
             ariaLabel="Points"
+            options={STAR_POINTS}
             value={s.points}
             decimals={0}
             min={3}

@@ -5,6 +5,7 @@ import * as A from '../../state/actions';
 import { locate } from '../../core/document';
 import type { CurvsDocument, FillItem, RectNode, SceneNode, StarNode, TextNode } from '../../core/types';
 import { NumberField } from '../controls/NumberField';
+import { STAR_POINTS } from '../inspector/Design';
 import { fromPt, toPt } from '../../core/units';
 import { Segmented } from '../controls/Segmented';
 import { FontFamilyPicker, FontStylePicker } from '../fonts/FontPicker';
@@ -171,6 +172,7 @@ function ToolOptions({ tool }: { tool: ReturnType<typeof getState>['tool'] }) {
           className="ctx-field"
           label="Pts"
           ariaLabel="Points"
+          options={STAR_POINTS}
           value={star ? star.points : ui.starPoints}
           decimals={0}
           min={3}

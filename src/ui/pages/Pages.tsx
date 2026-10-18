@@ -104,7 +104,8 @@ export function HelpPage() {
       body: (
         <ul>
           <li>Fields accept math: 120/3, +12, *2, 50%, 10mm, 2in.</li>
-          <li>Drag a field’s label to scrub. Hold ⇧ for big steps, ⌥ for fine steps.</li>
+          <li>Click or hold the arrows beside a field to step it. Hold ⇧ for big steps, ⌥ for fine steps.</li>
+          <li>Fields with a fixed range, like opacity, have a dropdown of presets.</li>
           <li>↑ and ↓ in a field step the value.</li>
         </ul>
       ),
