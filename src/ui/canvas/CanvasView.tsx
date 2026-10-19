@@ -428,11 +428,13 @@ export function CanvasView() {
     }
     // Double-tap with a finger or pen stands in for double-click.
     if (e.pointerType !== 'mouse' && !p.moved) {
-      const now = performance.now();
+      // Time the taps by when they happened, not when they were handled: a busy main thread (a big
+      // re-render after the first tap) must not stretch the gap between them.
+      const now = e.timeStamp || performance.now();
       const t = lastTap.current;
       if (t && now - t.t < DOUBLE_TAP_MS && Math.hypot(t.at[0] - p.screen[0], t.at[1] - p.screen[1]) < 24) {
         lastTap.current = null;
-        syntheticDbl.current = now;
+        syntheticDbl.current = performance.now();
         const next = makeApi();
         if (next) TOOL_IMPLS[activeTool].dblclick?.(toPointer(e, null, next.view), next);
       } else lastTap.current = { t: now, at: p.screen };

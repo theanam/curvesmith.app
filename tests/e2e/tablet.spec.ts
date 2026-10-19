@@ -8,10 +8,11 @@ type Pt = [number, number];
 
 async function touches(page: Page) {
   const cdp: CDPSession = await page.context().newCDPSession(page);
-  const send = (type: string, pts: Pt[]) =>
+  const send = (type: string, pts: Pt[], timestamp?: number) =>
     cdp.send('Input.dispatchTouchEvent', {
       type: type as 'touchStart',
       touchPoints: pts.map(([x, y], id) => ({ x, y, id })),
+      ...(timestamp ? { timestamp } : {}),
     });
   return {
     async drag(from: Pt, to: Pt, steps = 8) {
@@ -25,6 +26,14 @@ async function touches(page: Page) {
     async tap(at: Pt) {
       await send('touchStart', [at]);
       await send('touchEnd', []);
+    },
+    /** Two taps 120 ms apart by their event timestamps, however slow the machine running the test is. */
+    async doubleTap(at: Pt) {
+      const t0 = Date.now() / 1000;
+      await send('touchStart', [at], t0);
+      await send('touchEnd', [], t0 + 0.03);
+      await send('touchStart', [at], t0 + 0.12);
+      await send('touchEnd', [], t0 + 0.15);
     },
     async pinch(center: Pt, from: number, to: number) {
       const at = (d: number): Pt[] => [
@@ -110,7 +119,6 @@ test('Shape builder and double-tap work without hover', async ({ app: page }) =>
   });
   await t.tap([700, 650]);
   await page.waitForTimeout(400);
-  await t.tap([340, 280]);
-  await t.tap([340, 280]);
+  await t.doubleTap([340, 280]);
   await expect.poll(() => state<boolean>(page, 'od.isolation !== null')).toBe(true);
 });
