@@ -31,8 +31,10 @@ No install, no account, and your files never leave your device.
 - **Pen** with corner/curve clicks, ⌥ to break a handle, Space to move the anchor, and Smart, Polygon and Line modes.
 - **Node tool**: convert nodes to Sharp, Smooth, Symmetric or Auto, bend segments by dragging, break, join, add, simplify.
 - **Pencil** that fits freehand strokes to clean Béziers, **Scissors** with a knife drag, and a **Shape builder** that merges or erases regions.
+- **Shapes tool** with 28 editable shapes (stars, cogs, hearts, callouts, clouds, arrows, rings, spirals and more), each with its own settings, picked from an Affinity-style flyout.
 - **Parametric shapes**: rectangles with per-corner round, chamfer and inset corners; ellipses with pie arcs; stars and polygons with depth and rounding. All editable from on-canvas widgets.
 - **Text**: point and area text with tracking, leading and OpenType features, and outlines on demand.
+- **Image Trace**: turn photos, logos and line art into clean vector layers with presets and a live preview. Crisp corners, smooth curves, no gaps between colors. Optional on-device AI cuts out the subject or upscales small images first.
 
 **Styling**
 - **Appearance stacks**: any number of fills, strokes and effects per object, with linear, radial and conic gradients and blend modes.
@@ -65,7 +67,7 @@ No install, no account, and your files never leave your device.
 | EPS | | Yes | PostScript level 3 |
 | DXF | Yes | Yes | For CAD, laser and vinyl cutters (R12) |
 | EMF | | Yes | For Microsoft Office |
-| PNG / JPG / WebP | as images | Yes | 1×, 2×, 3× or a custom size; PNGs carry their DPI |
+| PNG / JPG / WebP | as images, or traced | Yes | 1×, 2×, 3× or a custom size; PNGs carry their DPI |
 
 Whenever a file opens with changes (a substituted font, a dropped filter), an import report lists them.
 
@@ -75,7 +77,7 @@ Whenever a file opens with changes (a substituted font, a dropped filter), an im
 |---|---|---|---|
 | Move `V` | Node `A` | Pen `P` | Pencil `N` |
 | Scissors `C` | Shape builder `⇧M` | Rectangle `M` | Ellipse `L` |
-| Star `*` | Text `T` | Gradient `G` | Eyedropper `I` |
+| Shapes `*` | Text `T` | Gradient `G` | Eyedropper `I` |
 | Hand `H` / `Space` | Zoom `Z` | Search `⌘K` | Export `⇧⌘E` |
 | Save `⌘S` | Group `⌘G` | Transform again `⌘D` | Fit `⌘0` · 100% `⌘1` |
 

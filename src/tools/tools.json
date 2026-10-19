@@ -86,7 +86,7 @@
       "label": "Shape builder",
       "shortcut": "⇧M",
       "groupStart": true,
-      "hint": "Drag across regions to merge them · ⌥-drag to erase regions",
+      "hint": "Hover overlapping shapes to see their regions · drag across regions to merge them · ⌥-drag to erase",
       "icon": {
         "viewBox": "0 0 24 24",
         "d": "M9 4a5 5 0 1 0 0 10a5 5 0 1 0 0-10M15 10a5 5 0 1 0 0 10a5 5 0 1 0 0-10",
@@ -131,10 +131,10 @@
     },
     {
       "id": "star",
-      "label": "Star & polygon",
+      "label": "Shapes",
       "shortcut": "*",
       "groupStart": false,
-      "hint": "Drag to draw · ↑ ↓ change points · drag the inner handle for depth",
+      "hint": "Drag to draw · ⇧ keeps proportions · ⌥ draws from the center · click the tool again for more shapes",
       "icon": {
         "viewBox": "0 0 24 24",
         "d": "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z",

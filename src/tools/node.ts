@@ -23,7 +23,7 @@ import {
 import { artboardRelative, drawHover, fmt, hudXY } from './common';
 
 const isShape = (n: SceneNode) =>
-  n.type === 'path' || n.type === 'rect' || n.type === 'ellipse' || n.type === 'star';
+  n.type === 'path' || n.type === 'rect' || n.type === 'ellipse' || n.type === 'star' || n.type === 'shape';
 
 type Target =
   | { kind: 'node'; id: string; sp: number; i: number }
@@ -45,10 +45,13 @@ function ensurePath(d: Draft<CurvsDocument>, id: string): Draft<PathShape> | nul
   if (!loc) return null;
   const n = loc.node as Draft<SceneNode>;
   if (n.type === 'path') return n as Draft<PathShape>;
-  if (n.type !== 'rect' && n.type !== 'ellipse' && n.type !== 'star') return null;
+  if (n.type !== 'rect' && n.type !== 'ellipse' && n.type !== 'star' && n.type !== 'shape') return null;
   const subpaths = nodeSubpaths(n as SceneNode).map((sp) => clone(sp));
+
   const p = n as unknown as Record<string, unknown>;
   for (const k of [
+    'kind',
+    'params',
     'width',
     'height',
     'corners',
@@ -64,9 +67,10 @@ function ensurePath(d: Draft<CurvsDocument>, id: string): Draft<PathShape> | nul
     'polygon',
   ])
     delete p[k];
+  const holes = n.type === 'shape';
   p.type = 'path';
   p.subpaths = subpaths;
-  p.fillRule = 'nonzero';
+  p.fillRule = holes ? 'evenodd' : 'nonzero';
   return n as unknown as Draft<PathShape>;
 }
 

@@ -149,6 +149,14 @@ export type ImageNode = Base & {
   height: number;
   crop?: { x: number; y: number; width: number; height: number };
 };
+/** Parametric shape from the Shapes tool, generated inside its box (0,0)–(width,height). */
+export type ShapeNode = Base & {
+  type: 'shape';
+  kind: import('./geometry/multishape').ShapeKind;
+  width: number;
+  height: number;
+  params: Record<string, number | boolean>;
+};
 export type BooleanOp = 'union' | 'subtract' | 'intersect' | 'exclude';
 export type BooleanNode = Base & { type: 'boolean'; op: BooleanOp; children: SceneNode[] };
 export type InstanceNode = Base & { type: 'instance'; symbol: string; overrides: Record<string, unknown> };
@@ -160,6 +168,7 @@ export type SceneNode =
   | RectNode
   | EllipseNode
   | StarNode
+  | ShapeNode
   | TextNode
   | ImageNode
   | BooleanNode

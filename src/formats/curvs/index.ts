@@ -67,6 +67,7 @@ const NODE_KEYS: Record<SceneNode['type'], string[]> = {
   rect: ['width', 'height', 'corners'],
   ellipse: ['rx', 'ry', 'arcStart', 'arcEnd', 'pie'],
   star: ['points', 'outerRadius', 'innerRatio', 'rounding', 'polygon'],
+  shape: ['kind', 'width', 'height', 'params'],
   text: ['mode', 'pathRef', 'box', 'runs', 'paragraph'],
   image: ['asset', 'width', 'height', 'crop'],
   boolean: ['op', 'children'],

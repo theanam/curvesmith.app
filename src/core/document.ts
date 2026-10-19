@@ -16,6 +16,7 @@ import type {
   RectNode,
   SceneNode,
   StarNode,
+  ShapeNode,
   StrokeItem,
   Subpath,
   TextNode,
@@ -119,6 +120,19 @@ export function makeStar(
     rounding: 0,
     polygon,
   };
+}
+
+export function makeShape(
+  kind: ShapeNode['kind'],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  params: ShapeNode['params'],
+  appearance = defaultAppearance(),
+  name = 'Shape',
+): ShapeNode {
+  return { ...base(name, appearance, translate(x, y)), type: 'shape', kind, width, height, params };
 }
 
 export function makePath(
@@ -291,6 +305,7 @@ export const typeLabel: Record<SceneNode['type'], string> = {
   rect: 'Rectangle',
   ellipse: 'Ellipse',
   star: 'Star',
+  shape: 'Shape',
   text: 'Text',
   image: 'Image',
   boolean: 'Compound',
@@ -338,3 +353,7 @@ export function pruneEmpty(doc: CurvsDocument) {
   };
   for (const ab of doc.artboards) prune(ab.children);
 }
+
+/** Paths can choose; parametric shapes with holes (donut, frame, cog) always use even-odd. */
+export const isEvenOdd = (n: SceneNode): boolean =>
+  (n.type === 'path' && n.fillRule === 'evenodd') || n.type === 'shape';

@@ -1,3 +1,4 @@
+import { isEvenOdd } from '../../core/document';
 /* Flattens a page into a display list of simple drawing operations for the PDF, EPS and EMF writers.
    It mirrors src/render/paint.ts: items paint bottom-to-top, drop shadows first, width profiles and
    arrowheads become fills, inside/outside strokes carry their clip. Group opacity is pushed down to
@@ -20,6 +21,7 @@ import { arrowHeads, profileOutline } from '../../core/geometry/strokes';
 import { resolveColor, rgb } from '../../core/color';
 import { rectSubpaths, uniformCorners } from '../../core/geometry/shapes';
 import { fontKey, type LoadedFont, textOutlines } from './fonts';
+import { imageLayers, imageRect } from '../../core/image';
 import type { Page } from './pages';
 
 type PaintProps = { paint: Paint; opacity: number; blend: BlendMode };
@@ -191,7 +193,7 @@ export function flattenPage(page: Page, opts: FlattenOptions): DrawOp[] {
           op: 'clip',
           m: multiply(m, c.transform),
           subpaths: nodeSubpaths(c, doc),
-          evenOdd: c.type === 'path' && c.fillRule === 'evenodd',
+          evenOdd: isEvenOdd(c),
         });
         for (const k of n.children) visit(k, m, opacity, blend, depth + 1);
         ops.push({ op: 'unclip' });
@@ -202,9 +204,15 @@ export function flattenPage(page: Page, opts: FlattenOptions): DrawOp[] {
         if (sym) visit(sym.root, m, opacity, blend, depth + 1);
         return;
       }
-      case 'image':
+      case 'image': {
+        // Same stack as a rectangle with the bitmap between fills and strokes (see render/paint.ts).
+        const { below, above } = imageLayers(n);
+        const rect = imageRect(n);
+        if (below.length) shapeOps({ ...n, appearance: { items: below } }, rect, m, opacity, blend, false);
         ops.push({ op: 'image', m, node: n, src: doc.assets[n.asset], opacity, blend });
+        if (above.length) shapeOps({ ...n, appearance: { items: above } }, rect, m, opacity, blend, false);
         return;
+      }
       case 'text': {
         const font = opts.fonts?.get(fontKey(n.runs[0].font))?.font;
         if (opts.textOutlines && font) {
@@ -238,7 +246,7 @@ export function flattenPage(page: Page, opts: FlattenOptions): DrawOp[] {
         return;
       }
       default:
-        shapeOps(n, nodeSubpaths(n, doc), m, opacity, blend, n.type === 'path' && n.fillRule === 'evenodd');
+        shapeOps(n, nodeSubpaths(n, doc), m, opacity, blend, isEvenOdd(n));
     }
   };
 

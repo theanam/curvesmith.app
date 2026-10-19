@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../../src/ui/App';
@@ -257,5 +257,49 @@ describe('number fields', () => {
     expect(getState().docs[0].doc.artboards[0].width).toBeGreaterThan(before);
     fireEvent.keyDown(w, { key: 'z', ctrlKey: true, metaKey: true });
     expect(getState().docs[0].doc.artboards[0].width).toBe(before);
+  });
+});
+
+describe('toolbar', () => {
+  it('has a Place image button next to Text that opens a file picker', async () => {
+    freshDoc();
+    render(<App />);
+    const textGroup = screen.getByRole('button', { name: 'Text (T)' }).closest('[role="group"]')!;
+    const place = within(textGroup as HTMLElement).getByRole('button', { name: 'Place image' });
+    const spy = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined);
+    await userEvent.click(place);
+    await new Promise((r) => setTimeout(r, 0));
+    const opened = spy.mock.contexts.at(-1) as HTMLInputElement | undefined;
+    spy.mockRestore();
+    expect(opened).toBeTruthy();
+    expect(opened!.type).toBe('file');
+    expect(opened!.accept).toContain('.png');
+    expect(place).not.toHaveAttribute('aria-pressed');
+  });
+});
+
+describe('shapes UI', () => {
+  it('the inspector edits a shape parameter and remembers it for the next one', async () => {
+    freshDoc();
+    const { makeShape } = await import('../../src/core/document');
+    const { defaultParams } = await import('../../src/core/shapeCatalog');
+    const s = makeShape('arrow', 0, 0, 100, 60, defaultParams('arrow'));
+    mutate('Add', (d) => void d.artboards[0].children.push(s as never), [s.id]);
+    Object.defineProperty(window, 'innerWidth', { value: 1440, configurable: true });
+    render(<App />);
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Both ends' }));
+    const n = getState().docs[0].doc.artboards[0].children[0];
+    expect(n.type === 'shape' && n.params.double).toBe(true);
+    expect(getState().ui.shapeParams.arrow?.double).toBe(true);
+  });
+
+  it('the toolbar flyout picks a shape', async () => {
+    freshDoc();
+    render(<App />);
+    const btn = screen.getByRole('button', { name: /^Shapes:/ });
+    fireEvent.contextMenu(btn);
+    await userEvent.click(await screen.findByRole('option', { name: 'Cloud' }));
+    expect(getState().ui.shapeKind).toBe('cloud');
+    expect(getState().tool).toBe('star');
   });
 });

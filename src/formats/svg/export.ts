@@ -1,3 +1,4 @@
+import { isEvenOdd } from '../../core/document';
 /* SVG writer. Mirrors src/render/paint.ts: appearance items become stacked elements (bottom-to-top), drop shadows
    and inner shadows become filters, inside/outside strokes are clipped/masked at twice the width, width profiles
    and arrowheads are filled outlines, booleans export their computed result.
@@ -30,6 +31,7 @@ import { colorToHex } from '../../core/color';
 import type { ExportContext } from '../types';
 import type { SvgExportOptions } from '../registry';
 import { serialize, x, type XNode } from '../shared/xml';
+import { imageLayers, imageRect } from '../../core/image';
 import { pagesForScope } from '../shared/pages';
 import { fontKey, loadFonts, textOutlines, type LoadedFont } from '../shared/fonts';
 import { dataUrlToBytes, readImageSize } from '../shared/bytes';
@@ -542,15 +544,10 @@ class SvgWriter {
         const clipEl =
           c.type === 'text'
             ? this.textElement(c)()
-            : this.geometry(
-                c,
-                nodeSubpaths(c, this.doc),
-                c.type === 'path' && c.fillRule === 'evenodd',
-                false,
-              )();
+            : this.geometry(c, nodeSubpaths(c, this.doc), isEvenOdd(c), false)();
         const t = this.matrix(c.transform);
         if (t) clipEl.attrs.push(['transform', t]);
-        if (c.type === 'path' && c.fillRule === 'evenodd') clipEl.attrs.push(['clip-rule', 'evenodd']);
+        if (isEvenOdd(c)) clipEl.attrs.push(['clip-rule', 'evenodd']);
         this.defs.push(x('clipPath', [['id', id]], [clipEl]));
         wrapper.push(['clip-path', `url(#${id})`]);
         content = n.children.map((k) => this.node(k, depth + 1)).filter((e): e is XNode => e !== null);
@@ -564,8 +561,17 @@ class SvgWriter {
         break;
       }
       case 'image': {
+        // A rectangle with an appearance stack; the bitmap sits between fills and strokes (render/paint.ts).
         const el = this.image(n);
-        if (el) content = [el];
+        if (!el) break;
+        const { below, above } = imageLayers(n);
+        const rect = imageRect(n);
+        const layer = (items: AppearanceItem[]) => {
+          if (!items.some((i) => i.visible)) return [];
+          const part = { ...n, appearance: { items } } as SceneNode;
+          return this.stack(part, this.geometry(part, rect, false, items.length > 1), rect, false);
+        };
+        content = [...layer(below), el, ...layer(above)];
         break;
       }
       case 'text': {
@@ -581,7 +587,7 @@ class SvgWriter {
       }
       default: {
         const sp = nodeSubpaths(n, this.doc);
-        const evenOdd = n.type === 'path' && n.fillRule === 'evenodd';
+        const evenOdd = isEvenOdd(n);
         content = this.stack(n, this.geometry(n, sp, evenOdd, n.appearance.items.length > 1), sp, evenOdd);
       }
     }

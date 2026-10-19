@@ -1,6 +1,8 @@
+import { isEvenOdd } from '../../core/document';
 import type { BooleanNode, CurvsDocument, Matrix, SceneNode, Subpath } from '../types';
 import { combine, pathKitReady } from '../booleans';
 import { ellipseSubpaths, rectSubpaths, starSubpaths } from './shapes';
+import { shapeSubpaths } from './multishape';
 import { layoutText } from '../text';
 import { multiply } from '../matrix';
 import { type Rect, subpathsBounds, transformRect, transformSubpath, unionRect } from './bezier';
@@ -32,6 +34,8 @@ export function nodeSubpaths(n: SceneNode, doc?: CurvsDocument): Subpath[] {
       return ellipseSubpaths(n);
     case 'star':
       return starSubpaths(n);
+    case 'shape':
+      return shapeSubpaths(n.kind, n.width, n.height, n.params);
     case 'image':
       return rectPath(n.width, n.height);
     case 'text': {
@@ -64,7 +68,7 @@ export function booleanSubpaths(n: BooleanNode, doc?: CurvsDocument): Subpath[] 
     .map((c) => ({
       subpaths: nodeSubpaths(c, doc),
       transform: c.transform,
-      evenOdd: c.type === 'path' && c.fillRule === 'evenodd',
+      evenOdd: isEvenOdd(c),
     }));
   const result = combine(n.op, operands);
   if (result) {

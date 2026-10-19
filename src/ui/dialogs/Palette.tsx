@@ -5,7 +5,7 @@ import { COMMANDS, formatShortcut, isEnabled, run } from '../../state/commands';
 import { closeDialog, getState, select, setActiveArtboard, setState, useEditor } from '../../state/store';
 import { allNodes, locate, typeLabel } from '../../core/document';
 import { Icon, type IconName } from '../icons';
-import { nodeIcon } from '../inspector/Design';
+import { NodeIcon } from '../inspector/Design';
 import { toolDef } from '../../tools/ids';
 import { colorToHex, resolveColor } from '../../core/color';
 import { listRecent, openRecent, type RecentEntry } from '../../state/files';
@@ -84,7 +84,7 @@ export function Palette() {
                         closeDialog();
                       }}
                     >
-                      <Icon name={nodeIcon(n)} size={16} />
+                      <NodeIcon n={n} size={16} />
                       <span>{n.name}</span>
                       <span className="muted small">{typeLabel[n.type]}</span>
                     </Command.Item>

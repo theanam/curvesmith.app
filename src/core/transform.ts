@@ -86,6 +86,7 @@ export function normalizeNode(n: SceneNode, strokeScale = 1) {
     }
   };
   switch (n.type) {
+    case 'shape':
     case 'rect':
       n.width *= sx;
       n.height *= sy;

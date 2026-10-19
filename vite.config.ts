@@ -100,9 +100,24 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'favicon.ico', 'fonts/*.woff2', 'icons/*.png', 'brand/*.svg'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,wasm,json,webmanifest}'],
+        // The optional AI models and ONNX Runtime (14–27 MB) are fetched on first use, never precached.
+        globIgnores: ['**/models/**', '**/ort-*.wasm', '**/ort*.mjs', '**/ort.*.js'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: '/index.html',
         runtimeCaching: [
+          {
+            // Same-origin AI weights and ONNX Runtime assets: kept after the first download, so they work offline.
+            urlPattern: ({ url, sameOrigin }) =>
+              sameOrigin &&
+              (/\/models\/[^/]+\.onnx$/.test(url.pathname) ||
+                /\/ort[.-][^/]*\.(wasm|m?js)$/.test(url.pathname)),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ai-models',
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
           {
             urlPattern:
               /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.jsdelivr\.net\/fontsource)\//,
@@ -116,7 +131,11 @@ export default defineConfig({
       },
     }),
   ],
-  build: { target: 'es2022', sourcemap: true, chunkSizeWarningLimit: 900 },
+  // ONNX Runtime (src/ai) runs in a module worker that code-splits its engines.
+  worker: { format: 'es' },
+  // Pre-bundling would leave onnxruntime-web's sibling .wasm behind and break it in dev.
+  optimizeDeps: { exclude: ['onnxruntime-web'] },
+  build: { target: 'es2022', sourcemap: true, chunkSizeWarningLimit: 900, assetsInlineLimit: 0 },
   test: {
     environment: 'jsdom',
     include: ['tests/unit/**/*.test.{ts,tsx}'],

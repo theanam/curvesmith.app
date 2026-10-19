@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { lsSet } from '../../state/storage';
 import { formatShortcut } from '../../state/commands';
 import { Icon, Mark } from '../icons';
+import { ShapeGlyph } from '../shapes/ShapePicker';
 import './tour.css';
 
 export const TOUR_KEY = 'curvesmith.tour';
@@ -102,6 +103,80 @@ function AppearanceArt() {
         strokeWidth="18"
       />
       <path d="M420 120 l-20 -18 l4 18 l-4 18z" fill="#2B5F6B" transform="rotate(30 420 120)" />
+    </svg>
+  );
+}
+
+function ShapesArt() {
+  const kinds = [
+    'triangle',
+    'doubleStar',
+    'cog',
+    'heart',
+    'calloutEllipse',
+    'donut',
+    'crescent',
+    'arrow',
+    'cloud',
+    'flower',
+    'shield',
+    'spiral',
+  ] as const;
+  return (
+    <div className="shapes-art" aria-hidden>
+      {kinds.map((k, i) => (
+        <span key={k} className="shape-tile" style={{ animationDelay: `${i * 0.07}s` }}>
+          <ShapeGlyph kind={k} size={40} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Pixels on the left become clean curves on the right. */
+function TraceArt() {
+  const leaf = (x: number, y: number) =>
+    Math.hypot(x - 63, y - 140) < 100 && Math.hypot(x - 187, y - 140) < 100;
+  const sun = (x: number, y: number) => Math.hypot(x - 165, y - 88) < 30;
+  const cells: { x: number; y: number; c: string }[] = [];
+  for (let y = 48; y < 232; y += 8)
+    for (let x = 30; x < 230; x += 8) {
+      const c = leaf(x + 4, y + 4) ? '#16c75b' : sun(x + 4, y + 4) ? '#f5b62b' : null;
+      if (c) cells.push({ x, y, c });
+    }
+  const lens = 'M125 61.5A100 100 0 0 1 125 218.5A100 100 0 0 1 125 61.5z';
+  return (
+    <svg viewBox="0 0 480 280" className="tour-art trace-art" aria-hidden>
+      <rect width="480" height="280" rx="14" className="art-bg" />
+      {cells.map((p) => (
+        <rect
+          key={`${p.x},${p.y}`}
+          x={p.x}
+          y={p.y}
+          width="8"
+          height="8"
+          fill={p.c}
+          className="px"
+          style={{ animationDelay: `${(p.x - 30) * 0.004}s` }}
+        />
+      ))}
+      <path d="M232 140h18m-6-6l6 6-6 6" className="arrow" />
+      <g transform="translate(230 0)">
+        <circle cx="165" cy="88" r="30" fill="#f5b62b" className="vec-fill" />
+        <path d={lens} fill="#16c75b" className="vec-fill" />
+        <circle cx="165" cy="88" r="30" className="draw" style={{ strokeWidth: 2 }} />
+        <path d={lens} className="draw" style={{ strokeWidth: 2 }} />
+        <g className="handles">
+          {[
+            [125, 61.5],
+            [125, 218.5],
+            [195, 88],
+            [165, 58],
+          ].map(([x, y]) => (
+            <circle key={`${x},${y}`} cx={x} cy={y} r="4" />
+          ))}
+        </g>
+      </g>
     </svg>
   );
 }
@@ -215,6 +290,30 @@ const SLIDES: Slide[] = [
       <>Double-click a group to edit inside it.</>,
     ],
     visual: shot('node-tool', 'Editing a wave with the Node tool, showing handles and a smart guide'),
+  },
+  {
+    kicker: 'Shapes',
+    title: 'Twenty-eight editable shapes',
+    points: [
+      <>
+        <K k="*" /> Click the Shapes tool again for hearts, cogs, callouts, clouds, arrows, spirals and more.
+      </>,
+      <>Every shape keeps its own settings: teeth, petals, tail position, hole size, sweep.</>,
+      <>Change a shape into another one any time without losing its size or style.</>,
+    ],
+    visual: <ShapesArt />,
+  },
+  {
+    kicker: 'Image Trace',
+    title: 'Turn pictures into vectors',
+    points: [
+      <>
+        Select a placed image and choose Trace image. Presets for logos, illustrations, photos and line art.
+      </>,
+      <>Tune colors, smoothness and corners with a live preview. Corners stay crisp, curves stay smooth.</>,
+      <>On-device AI cuts out the subject or upscales small images first. Nothing leaves your computer.</>,
+    ],
+    visual: <TraceArt />,
   },
   {
     kicker: 'Appearance',

@@ -292,7 +292,13 @@ export const moveTool: Tool = {
       setState({ editingText: n.id });
       return;
     }
-    if (n.type === 'path' || n.type === 'rect' || n.type === 'ellipse' || n.type === 'star') {
+    if (
+      n.type === 'path' ||
+      n.type === 'rect' ||
+      n.type === 'ellipse' ||
+      n.type === 'star' ||
+      n.type === 'shape'
+    ) {
       select([n.id]);
       setTool('node');
     }

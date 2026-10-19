@@ -1,6 +1,7 @@
 import type { SceneNode } from '../core/types';
 import type { Tool, ToolApi, ToolPointer } from './types';
-import { makeEllipse, makeRect, makeStar, clone } from '../core/document';
+import { makeEllipse, makeRect, makeShape, makeStar, clone } from '../core/document';
+import { defaultParams, isMultiShape, shapeDef } from '../core/shapeCatalog';
 import { invert, multiply } from '../core/matrix';
 import {
   beginGesture,
@@ -34,6 +35,26 @@ function makeShapeTool(kind: Kind): Tool {
     let b = api.snap(e.world, drawing ? [drawing.id] : []).point;
     let dx = b[0] - a[0];
     let dy = b[1] - a[1];
+    // The Shapes tool draws stars and polygons from the center; every other shape fills a box like a rectangle.
+    const shapeKind = getState().ui.shapeKind;
+    const boxShape = kind === 'star' && isMultiShape(shapeKind) ? shapeKind : null;
+    if (boxShape) {
+      const fromCenter = e.alt;
+      if (e.shift) {
+        const s = Math.max(Math.abs(dx), Math.abs(dy));
+        dx = Math.sign(dx || 1) * s;
+        dy = Math.sign(dy || 1) * s;
+        b = [a[0] + dx, a[1] + dy];
+      }
+      const x0 = fromCenter ? a[0] - Math.abs(dx) : Math.min(a[0], b[0]);
+      const y0 = fromCenter ? a[1] - Math.abs(dy) : Math.min(a[1], b[1]);
+      const w = fromCenter ? Math.abs(dx) * 2 : Math.abs(dx);
+      const h = fromCenter ? Math.abs(dy) * 2 : Math.abs(dy);
+      const def = shapeDef(boxShape);
+      const params = { ...defaultParams(boxShape), ...(getState().ui.shapeParams[boxShape] ?? {}) };
+      const node = makeShape(boxShape, x0, y0, w, h, params, newShapeAppearance(def.open), def.label);
+      return { node, w, h };
+    }
     if (e.shift || kind === 'star') {
       const s = Math.max(Math.abs(dx), Math.abs(dy));
       dx = Math.sign(dx || 1) * s;
@@ -51,7 +72,14 @@ function makeShapeTool(kind: Kind): Tool {
     else if (kind === 'ellipse') node = makeEllipse(x0 + w / 2, y0 + h / 2, w / 2, h / 2, ap);
     else {
       const ui = getState().ui;
-      node = makeStar(a[0], a[1], Math.hypot(dx, dy) / Math.SQRT2, ui.starPoints, ui.starPolygon, ap);
+      node = makeStar(
+        a[0],
+        a[1],
+        Math.hypot(dx, dy) / Math.SQRT2,
+        ui.starPoints,
+        ui.shapeKind === 'polygon',
+        ap,
+      );
       // Point the first tip toward the cursor when not constrained.
       if (!e.shift) {
         const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2 - Math.PI / 4;
@@ -138,9 +166,7 @@ function makeShapeTool(kind: Kind): Tool {
           ? 'Rectangle'
           : kind === 'ellipse'
             ? 'Ellipse'
-            : getState().ui.starPolygon
-              ? 'Polygon'
-              : 'Star',
+            : shapeDef(getState().ui.shapeKind).label,
         [id],
       );
       api.render();
@@ -148,7 +174,16 @@ function makeShapeTool(kind: Kind): Tool {
     key(e, api) {
       if (kind === 'star' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         const ui = getState().ui;
-        setUi({ starPoints: Math.max(3, Math.min(64, ui.starPoints + (e.key === 'ArrowUp' ? 1 : -1))) });
+        const dir = e.key === 'ArrowUp' ? 1 : -1;
+        if (isMultiShape(ui.shapeKind)) {
+          // ↑/↓ change the shape's count (points, teeth, petals, bumps, turns) while drawing.
+          const k = ui.shapeKind;
+          const c = shapeDef(k).params.find((p) => p.type === 'count');
+          if (!c || c.type !== 'count') return false;
+          const cur = { ...defaultParams(k), ...(ui.shapeParams[k] ?? {}) };
+          const next = Math.max(c.min, Math.min(c.max, Number(cur[c.key]) + dir));
+          setUi({ shapeParams: { ...ui.shapeParams, [k]: { ...(ui.shapeParams[k] ?? {}), [c.key]: next } } });
+        } else setUi({ starPoints: Math.max(3, Math.min(64, ui.starPoints + dir)) });
         if (drawing && last) {
           preview(last, api);
           api.render();

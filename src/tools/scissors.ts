@@ -15,7 +15,7 @@ let knife: { a: Vec; b: Vec } | null = null;
 
 const asDoc = (d: Draft<CurvsDocument>) => d as unknown as CurvsDocument;
 const cuttable = (n: SceneNode) =>
-  n.type === 'path' || n.type === 'rect' || n.type === 'ellipse' || n.type === 'star';
+  n.type === 'path' || n.type === 'rect' || n.type === 'ellipse' || n.type === 'star' || n.type === 'shape';
 
 /** Split a subpath at a node index: closed paths open there, open paths become two. */
 export function splitAtNode(sp: Subpath, i: number): Subpath[] {

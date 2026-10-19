@@ -245,3 +245,149 @@ test('the start screen does not scroll when its content fits, and scrolls at the
   expect(m.overflow).toBeLessThanOrEqual(0);
   expect(m.right).toBe(1728);
 });
+
+test('the toolbar Place image button places a picked image', async ({ app: page }) => {
+  await newA4(page);
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR4nGP4z8DwnwEIGBj+MzAwAAA4BwH/2hk1tQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Place image' }).click();
+  await (await chooser).setFiles({ name: 'dot.png', mimeType: 'image/png', buffer: png });
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0]?.type')).toBe('image');
+});
+
+test('a stroke on a placed image is drawn around the photo', async ({ app: page }) => {
+  await newA4(page);
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR4nGP4z8DwnwEIGBj+MzAwAAA4BwH/2hk1tQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Place image' }).click();
+  await (await chooser).setFiles({ name: 'dot.png', mimeType: 'image/png', buffer: png });
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0]?.type')).toBe('image');
+  // Add a thick stroke, outside the photo.
+  await page.getByRole('button', { name: 'Add fill, stroke or effect' }).click();
+  await page.getByRole('menuitem', { name: 'Stroke' }).click();
+  await page.getByRole('button', { name: 'Edit stroke' }).click();
+  const weight = page.getByRole('textbox', { name: 'Stroke weight' });
+  await weight.fill('20');
+  await weight.press('Enter');
+  await page.getByRole('radio', { name: 'Outside' }).click();
+  await page.keyboard.press('Escape');
+  // Read the canvas just outside the image's left edge: it must show the stroke color.
+  const color = await page.evaluate(() => {
+    const c = (
+      window as unknown as {
+        __curvesmith: {
+          activeDoc(): { doc: { artboards: { children: { id: string }[] }[] } };
+          centerOf(id: string): [number, number];
+          worldToClient(x: number, y: number): [number, number];
+        };
+      }
+    ).__curvesmith;
+    const od = c.activeDoc();
+    const img = od.doc.artboards[0].children[0] as unknown as { transform: number[]; height: number };
+    const host = document.querySelector('[data-canvas-host]')!.getBoundingClientRect();
+    const p = c.worldToClient(img.transform[4] - 4, img.transform[5] + img.height / 2);
+    const cv = document.querySelector<HTMLCanvasElement>('canvas[data-layer="doc"]')!;
+    const dpr = cv.width / cv.clientWidth;
+    const d = cv
+      .getContext('2d')!
+      .getImageData(Math.round((p[0] - host.left) * dpr), Math.round((p[1] - host.top) * dpr), 1, 1).data;
+    return [d[0], d[1], d[2]];
+  });
+  // Default stroke is ink (#1A1820).
+  expect(color[0]).toBeLessThan(60);
+  expect(color[2]).toBeLessThan(60);
+});
+
+test('Shapes tool: pick a cog from the flyout, draw it, change its teeth', async ({ app: page }) => {
+  await newA4(page);
+  await page.keyboard.press('*');
+  await page.locator('[data-tool="star"]').click();
+  await page.getByRole('option', { name: 'Cog' }).click();
+  await page.mouse.move(450, 300);
+  await page.mouse.down();
+  await page.mouse.move(600, 450, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0]?.kind')).toBe('cog');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    const c = (
+      window as unknown as {
+        __curvesmith: {
+          select(ids: string[]): void;
+          activeDoc(): { doc: { artboards: { children: { id: string }[] }[] } };
+        };
+      }
+    ).__curvesmith;
+    c.select([c.activeDoc().doc.artboards[0].children[0].id]);
+  });
+  await page.getByRole('button', { name: 'Teeth presets' }).click();
+  await page.getByRole('menuitem', { name: '16', exact: true }).click();
+  expect(await state<number>(page, 'od.doc.artboards[0].children[0].params.teeth')).toBe(16);
+});
+
+test('Shape builder merges overlapping shapes without selecting them first', async ({ app: page }) => {
+  await newA4(page);
+  const box = async (k: string, x: number, y: number) => {
+    await page.keyboard.press(k);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 150, y + 150, { steps: 3 });
+    await page.mouse.up();
+  };
+  await box('m', 450, 300);
+  await box('l', 530, 360);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Shift+m');
+  await page.mouse.move(465, 315);
+  await page.mouse.move(470, 320);
+  await page.mouse.down();
+  await page.mouse.move(560, 400, { steps: 5 });
+  await page.mouse.up();
+  await expect
+    .poll(() => state<string>(page, "od.doc.artboards[0].children.map((n) => n.type).join(',')"))
+    .toBe('path,path');
+});
+
+test('traces a placed image into vector layers', async ({ app: page }) => {
+  await newA4(page);
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = 240;
+    c.height = 160;
+    const x = c.getContext('2d')!;
+    x.fillStyle = '#f4efe6';
+    x.fillRect(0, 0, 240, 160);
+    x.fillStyle = '#e5484d';
+    x.beginPath();
+    x.arc(70, 80, 50, 0, Math.PI * 2);
+    x.fill();
+    x.fillStyle = '#3b82f6';
+    x.fillRect(140, 30, 80, 100);
+    const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/png'));
+    const io = '/src/state/io.ts';
+    const { placeFiles } = await import(/* @vite-ignore */ io);
+    await placeFiles([new File([blob], 'shapes.png', { type: 'image/png' })]);
+  });
+  await page.click('[data-action="trace-image"]');
+  const dialog = page.getByRole('dialog', { name: 'Trace image' });
+  await dialog.locator('[data-preset="logo"]').click();
+  await expect(dialog.getByTestId('trace-stats')).toHaveText(/^3 colors · /);
+  await dialog.getByRole('radio', { name: 'Outlines' }).click();
+  await dialog.locator('[data-action="trace-apply"]').click();
+  await expect(dialog).toBeHidden();
+  const layers = await state<string[][]>(
+    page,
+    'od.doc.artboards[0].children.map((n) => [n.type, n.name, String(n.children?.length ?? 0)])',
+  );
+  expect(layers).toEqual([['group', 'shapes (traced)', '3']]);
+  await page.keyboard.press(`${mod}+z`);
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0].type')).toBe('image');
+});

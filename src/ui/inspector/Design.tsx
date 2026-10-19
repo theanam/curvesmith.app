@@ -9,12 +9,15 @@ import type {
   ImageNode,
   Matrix,
   RectNode,
+  ShapeNode,
   SceneNode,
   StarNode,
   TextNode,
   Unit,
 } from '../../core/types';
-import { mutate, useActiveDoc, type OpenDoc } from '../../state/store';
+import { getState, mutate, setUi, useActiveDoc, type OpenDoc } from '../../state/store';
+import { ShapeGlyph, ShapeList } from '../shapes/ShapePicker';
+import { defaultParams, isMultiShape, shapeDef, type ShapeToolKind } from '../../core/shapeCatalog';
 import { childrenOf, locate, typeLabel, clone } from '../../core/document';
 import { applyWorldDelta, rotateAbout, selectionBounds, selectionRotation } from '../../core/transform';
 import { multiply, translate } from '../../core/matrix';
@@ -29,6 +32,7 @@ import { fontsInUse } from '../../fonts/loader';
 import { ColorPopover } from './ColorPicker';
 import { cssColor } from '../../core/color';
 import { detachInstance } from '../../state/extra';
+import { openTrace } from '../../state/trace';
 import { Segmented } from '../controls/Segmented';
 
 const ICON_FOR: Record<SceneNode['type'], IconName> = {
@@ -37,6 +41,7 @@ const ICON_FOR: Record<SceneNode['type'], IconName> = {
   rect: 'rect',
   ellipse: 'ellipse',
   star: 'star',
+  shape: 'shapes',
   text: 'text',
   image: 'image',
   boolean: 'boolean',
@@ -46,12 +51,19 @@ const ICON_FOR: Record<SceneNode['type'], IconName> = {
 
 export const nodeIcon = (n: SceneNode): IconName => ICON_FOR[n.type];
 
+/** Layer icon: parametric shapes show their own outline, everything else its type icon. */
+export function NodeIcon({ n, size = 14 }: { n: SceneNode; size?: number }) {
+  if (n.type === 'shape') return <ShapeGlyph kind={n.kind} size={size + 2} />;
+  return <Icon name={nodeIcon(n)} size={size} stroke={1.7} />;
+}
+
 function describe(n: SceneNode): string {
   if (n.type === 'path') {
     const count = n.subpaths.reduce((s, sp) => s + sp.nodes.length, 0);
     return `Path · ${count} node${count === 1 ? '' : 's'}`;
   }
   if (n.type === 'group' || n.type === 'boolean') return `${typeLabel[n.type]} · ${childrenOf(n).length}`;
+  if (n.type === 'shape') return `Shape · ${shapeDef(n.kind).label}`;
   return typeLabel[n.type];
 }
 
@@ -62,7 +74,7 @@ function SelectionHeader({ od }: { od: OpenDoc }) {
   const one = nodes.length === 1 ? nodes[0] : null;
   return (
     <section className="sel-header">
-      <Icon name={one ? nodeIcon(one) : 'layers'} size={16} stroke={1.7} />
+      {one ? <NodeIcon n={one} size={16} /> : <Icon name="layers" size={16} stroke={1.7} />}
       {one && editing ? (
         <input
           autoFocus
@@ -449,6 +461,145 @@ function editNode<T extends SceneNode>(id: string, label: string, fn: (n: Draft<
   );
 }
 
+const SWEEPS = [30, 45, 60, 90, 120, 180, 225, 270, 300, 330];
+
+/** Editable parameters of a Shapes-tool shape, plus switching it to another kind in place. */
+function ParamShapeSection({ n }: { n: ShapeNode }) {
+  const [pick, setPick] = useState(false);
+  const def = shapeDef(n.kind);
+  const params = { ...defaultParams(n.kind), ...n.params };
+  const set = (key: string, value: number | boolean) => {
+    editNode<ShapeNode>(n.id, `${def.label} ${key}`, (x) => void (x.params = { ...x.params, [key]: value }));
+    // The next shape of this kind starts from the last values used.
+    const ui = getState().ui;
+    setUi({
+      shapeParams: { ...ui.shapeParams, [n.kind]: { ...(ui.shapeParams[n.kind] ?? {}), [key]: value } },
+    });
+  };
+  return (
+    <section className="insp-section">
+      <div className="insp-head">
+        <h3>{def.label}</h3>
+        <ShapeKindPicker
+          open={pick}
+          onOpenChange={setPick}
+          value={n.kind}
+          onPick={(k) => {
+            if (!isMultiShape(k)) return;
+            editNode<ShapeNode>(n.id, 'Change shape', (x) => {
+              x.kind = k;
+              x.params = { ...defaultParams(k), ...(getState().ui.shapeParams[k] ?? {}) };
+              if (x.name === def.label) x.name = shapeDef(k).label;
+            });
+            setPick(false);
+          }}
+        />
+      </div>
+      {def.params.length === 0 && (
+        <span className="muted" style={{ fontSize: 12 }}>
+          No options for this shape.
+        </span>
+      )}
+      <div className="grid2">
+        {def.params.map((p) => {
+          if (p.type === 'bool')
+            return (
+              <label key={p.key} className="check" style={{ gridColumn: '1 / -1' }}>
+                <input
+                  type="checkbox"
+                  checked={!!params[p.key]}
+                  onChange={(e) => set(p.key, e.target.checked)}
+                />
+                {p.label}
+              </label>
+            );
+          if (p.type === 'percent')
+            return (
+              <NumberField
+                key={p.key}
+                label={p.label}
+                ariaLabel={p.label}
+                value={Math.round(Number(params[p.key]) * 1000) / 10}
+                unit="%"
+                decimals={1}
+                min={p.min}
+                max={p.max}
+                step={1}
+                onChange={(v) => set(p.key, v / 100)}
+              />
+            );
+          if (p.type === 'count')
+            return (
+              <NumberField
+                key={p.key}
+                label={p.label}
+                ariaLabel={p.label}
+                value={Number(params[p.key])}
+                decimals={0}
+                min={p.min}
+                max={p.max}
+                options={p.options}
+                onChange={(v) => set(p.key, Math.round(v))}
+              />
+            );
+          return (
+            <NumberField
+              key={p.key}
+              label={p.label}
+              ariaLabel={p.label}
+              value={Number(params[p.key])}
+              unit="°"
+              decimals={1}
+              step={15}
+              min={p.min}
+              max={p.max}
+              options={p.key === 'sweep' ? SWEEPS : undefined}
+              onChange={(v) => set(p.key, v)}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** Small icon button opening the shape list, used to change a shape's kind. */
+function ShapeKindPicker({
+  open,
+  onOpenChange,
+  value,
+  onPick,
+}: {
+  open: boolean;
+  onOpenChange(o: boolean): void;
+  value: ShapeToolKind;
+  onPick(k: ShapeToolKind): void;
+}) {
+  return (
+    <P.Root open={open} onOpenChange={onOpenChange}>
+      <Tip label="Change shape">
+        <P.Trigger asChild>
+          <button className="ctx-shape" aria-label="Change shape" style={{ height: 26 }}>
+            <ShapeGlyph kind={value} size={16} />
+            <Icon name="chevronDown" size={13} />
+          </button>
+        </P.Trigger>
+      </Tip>
+      <P.Portal>
+        <P.Content
+          className="popover shape-popover"
+          side="left"
+          align="start"
+          sideOffset={10}
+          collisionPadding={10}
+        >
+          <ShapeList value={value} onPick={onPick} />
+        </P.Content>
+      </P.Portal>
+    </P.Root>
+  );
+}
+
 function ShapeSection({ od }: { od: OpenDoc }) {
   if (od.selection.length !== 1) return null;
   const n = locate(od.doc, od.selection[0])?.node;
@@ -573,6 +724,7 @@ function ShapeSection({ od }: { od: OpenDoc }) {
       </section>
     );
   }
+  if (n.type === 'shape') return <ParamShapeSection n={n} />;
   if (n.type === 'star') {
     const s = n as StarNode;
     return (
@@ -761,6 +913,9 @@ function ShapeSection({ od }: { od: OpenDoc }) {
         <div className="muted" style={{ fontSize: 12 }}>
           {Math.round(im.width)} × {Math.round(im.height)} pt
         </div>
+        <button className="small-btn" data-action="trace-image" onClick={() => openTrace(im.id)}>
+          <Icon name="wand" size={14} /> Trace image…
+        </button>
       </section>
     );
   }

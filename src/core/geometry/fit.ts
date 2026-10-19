@@ -163,15 +163,18 @@ export function smoothPoints(points: Vec[], amount: number): Vec[] {
   });
 }
 
-/** Fit a polyline with cubic Béziers within `error` and return a subpath. */
-export function fitCurve(rawPoints: Vec[], error = 2, closed = false): Subpath {
+/**
+ * Fit a polyline with cubic Béziers within `error` and return a subpath. `tangents` overrides the
+ * unit tangents at the start and end (pointing into the curve), e.g. to keep a closed seam smooth.
+ */
+export function fitCurve(rawPoints: Vec[], error = 2, closed = false, tangents?: [Vec, Vec]): Subpath {
   const points = dedupe(rawPoints);
   if (points.length < 2) {
     const p = points[0] ?? [0, 0];
     return { closed: false, nodes: [{ x: p[0], y: p[1], in: null, out: null, kind: 'sharp' }] };
   }
-  const tHat1 = normalize(sub(points[1], points[0]));
-  const tHat2 = normalize(sub(points[points.length - 2], points[points.length - 1]));
+  const tHat1 = tangents?.[0] ?? normalize(sub(points[1], points[0]));
+  const tHat2 = tangents?.[1] ?? normalize(sub(points[points.length - 2], points[points.length - 1]));
   const beziers: Bez[] = [];
   fitCubic(points, 0, points.length - 1, tHat1, tHat2, error, beziers);
   const nodes: PathNode[] = [];

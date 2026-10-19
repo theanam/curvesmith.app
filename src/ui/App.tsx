@@ -30,6 +30,7 @@ import { nudge } from '../state/actions';
 import { nudgeNodes } from '../tools/node';
 import { Icon } from './icons';
 
+const TraceDialog = lazy(() => import('./trace/TraceDialog').then((m) => ({ default: m.TraceDialog })));
 const ExportDialog = lazy(() => import('./dialogs/ExportDialog').then((m) => ({ default: m.ExportDialog })));
 const Tour = lazy(() => import('./tour/Tour').then((m) => ({ default: m.Tour })));
 const HelpPage = lazy(() => import('./pages/Pages').then((m) => ({ default: m.HelpPage })));
@@ -287,6 +288,7 @@ export function App() {
           <CloseConfirmDialog />
           <Suspense fallback={null}>
             {dialog === 'export' && <ExportDialog />}
+            {dialog === 'trace' && <TraceDialog />}
             {dialog === 'tour' && <Tour onClose={closeDialog} />}
           </Suspense>
         </ErrorBoundary>

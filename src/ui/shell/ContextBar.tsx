@@ -5,6 +5,9 @@ import * as A from '../../state/actions';
 import { locate } from '../../core/document';
 import type { CurvsDocument, FillItem, RectNode, SceneNode, StarNode, TextNode } from '../../core/types';
 import { NumberField } from '../controls/NumberField';
+import { useState } from 'react';
+import { ShapeGlyph, ShapePopover } from '../shapes/ShapePicker';
+import { shapeDef } from '../../core/shapeCatalog';
 import { STAR_POINTS } from '../inspector/Design';
 import { fromPt, toPt } from '../../core/units';
 import { Segmented } from '../controls/Segmented';
@@ -105,6 +108,27 @@ function selectedOfType<T extends SceneNode['type']>(type: T): Extract<SceneNode
   return n?.type === type ? (n as Extract<SceneNode, { type: T }>) : null;
 }
 
+/** Shape picker in the tool options bar: the current shape, opening the full list. */
+function ShapeKindButton() {
+  const kind = useEditor((s) => s.ui.shapeKind);
+  const [open, setOpen] = useState(false);
+  return (
+    <ShapePopover open={open} onOpenChange={setOpen} side="bottom">
+      <button
+        className="ctx-shape"
+        aria-label={`Shape: ${shapeDef(kind).label}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <ShapeGlyph kind={kind} size={18} />
+        {shapeDef(kind).label}
+        <Icon name="chevronDown" size={14} />
+      </button>
+    </ShapePopover>
+  );
+}
+
 function ToolOptions({ tool }: { tool: ReturnType<typeof getState>['tool'] }) {
   const ui = useEditor((s) => s.ui);
   const od = useActiveDoc();
@@ -153,36 +177,27 @@ function ToolOptions({ tool }: { tool: ReturnType<typeof getState>['tool'] }) {
     );
   if (tool === 'star') {
     const star = od ? selectedOfType('star') : null;
+    const isStarKind = ui.shapeKind === 'star' || ui.shapeKind === 'polygon';
     return (
       <div className="group">
-        <Segmented
-          label="Shape"
-          value={(star ? star.polygon : ui.starPolygon) ? 'polygon' : 'star'}
-          onChange={(v) => {
-            setUi({ starPolygon: v === 'polygon' });
-            if (star)
-              editSelected('Star type', (n) => void ((n as Draft<StarNode>).polygon = v === 'polygon'));
-          }}
-          options={[
-            { value: 'star', label: 'Star' },
-            { value: 'polygon', label: 'Polygon' },
-          ]}
-        />
-        <NumberField
-          className="ctx-field"
-          label="Pts"
-          ariaLabel="Points"
-          options={STAR_POINTS}
-          value={star ? star.points : ui.starPoints}
-          decimals={0}
-          min={3}
-          max={64}
-          onChange={(v) => {
-            const p = Math.round(v);
-            setUi({ starPoints: p });
-            if (star) editSelected('Star points', (n) => void ((n as Draft<StarNode>).points = p), 600);
-          }}
-        />
+        <ShapeKindButton />
+        {isStarKind && (
+          <NumberField
+            className="ctx-field"
+            label="Pts"
+            ariaLabel="Points"
+            options={STAR_POINTS}
+            value={star ? star.points : ui.starPoints}
+            decimals={0}
+            min={3}
+            max={64}
+            onChange={(v) => {
+              const p = Math.round(v);
+              setUi({ starPoints: p });
+              if (star) editSelected('Star points', (n) => void ((n as Draft<StarNode>).points = p), 600);
+            }}
+          />
+        )}
         <div className="sep-v" />
         <Hint text={def.hint} />
       </div>

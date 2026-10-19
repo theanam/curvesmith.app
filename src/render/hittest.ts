@@ -8,7 +8,7 @@ import {
   rectsIntersect,
 } from '../core/geometry/bezier';
 import { nodeBounds, nodeSubpaths } from '../core/geometry/node';
-import { childrenOf, locate } from '../core/document';
+import { childrenOf, locate, isEvenOdd } from '../core/document';
 
 const flatCache = new WeakMap<Subpath[], Vec[][]>();
 function flatten(subpaths: Subpath[]): Vec[][] {
@@ -60,7 +60,7 @@ export function hitLeaf(n: SceneNode, local: Vec, tol: number, doc: CurvsDocumen
   const strokeW = Math.max(0, ...items.map((i) => (i.kind === 'stroke' ? i.width : 0)));
   if (filled) {
     const closedPolys = polys.filter((_, i) => subpaths[i].closed || items.some((x) => x.kind === 'fill'));
-    if (winding(local, closedPolys, n.type === 'path' && n.fillRule === 'evenodd')) return true;
+    if (winding(local, closedPolys, isEvenOdd(n))) return true;
   }
   const edgeTol = strokeW / 2 + tol;
   for (let k = 0; k < polys.length; k++) {

@@ -471,3 +471,40 @@
     font-size: 22px;
   }
 }
+
+.shapes-art {
+  display: grid;
+  grid-template-columns: repeat(4, 76px);
+  gap: 14px;
+  color: var(--accent);
+}
+
+.shape-tile {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  animation: pop-key 0.45s var(--ease) both;
+}
+
+.trace-art .px {
+  opacity: 0;
+  animation: fade-in 0.3s forwards;
+}
+
+.trace-art .vec-fill {
+  opacity: 0;
+  animation: fade-in 0.6s 1.8s forwards;
+}
+
+.trace-art .arrow {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

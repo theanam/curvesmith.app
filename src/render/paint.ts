@@ -1,10 +1,13 @@
+import { isEvenOdd } from '../core/document';
 /* Canvas2D document renderer. This file defines how an appearance stack is painted; the SVG/PDF writers mirror it:
    - items paint bottom-to-top in array order;
    - drop shadows paint beneath everything, inner shadows right after the fills that precede them;
    - stroke align: center = plain stroke; inside = clipped to the shape at 2x width; outside = clipped to the
      shape's exterior at 2x width;
    - a stroke with a width profile is drawn as a filled outline (core/geometry/strokes.ts);
-   - arrowheads are filled with the stroke paint. */
+   - arrowheads are filled with the stroke paint;
+   - an image is a rectangle with an appearance stack: drop shadows, then fills (behind the photo, visible
+     through transparency), then the bitmap, then strokes and inner shadows on top (see `imageLayers`). */
 import type {
   CurvsDocument,
   Effect,
@@ -19,6 +22,7 @@ import type {
 } from '../core/types';
 import { cssColor } from '../core/color';
 import { nodeSubpaths } from '../core/geometry/node';
+import { imageRect } from '../core/image';
 import { arrowHeads, profileOutline } from '../core/geometry/strokes';
 import { cssFont, layoutText, primaryRun } from '../core/text';
 
@@ -163,9 +167,17 @@ function drawStroke(
 export const blendOp = (b: string): GlobalCompositeOperation =>
   b === 'normal' ? 'source-over' : (b as GlobalCompositeOperation);
 
-function drawShape(ctx: Ctx, n: SceneNode, subpaths: Subpath[], doc: CurvsDocument, opts: RenderOptions) {
+function drawShape(
+  ctx: Ctx,
+  n: SceneNode,
+  subpaths: Subpath[],
+  doc: CurvsDocument,
+  opts: RenderOptions,
+  /** Painted after the fills and before strokes and inner shadows (an image's bitmap). */
+  content?: () => void,
+) {
   const path = toPath2D(subpaths);
-  const fillRule: CanvasFillRule = n.type === 'path' && n.fillRule === 'evenodd' ? 'evenodd' : 'nonzero';
+  const fillRule: CanvasFillRule = isEvenOdd(n) ? 'evenodd' : 'nonzero';
   if (opts.outline) {
     ctx.save();
     ctx.lineWidth = 1 / Math.max(opts.pixelScale, 1e-6);
@@ -181,20 +193,26 @@ function drawShape(ctx: Ctx, n: SceneNode, subpaths: Subpath[], doc: CurvsDocume
     if (it.kind === 'effect' && it.visible && it.effect.type === 'dropShadow')
       shadowOnly(ctx, path, fillRule, it.effect, sw, opts.pixelScale, false);
   }
-  for (const it of items) {
-    if (!it.visible) continue;
-    if (it.kind === 'fill') {
-      ctx.save();
-      ctx.globalCompositeOperation = blendOp(it.blend);
-      ctx.fillStyle = paintStyle(ctx, it.paint, sw, it.opacity);
-      ctx.fill(path, fillRule);
-      ctx.restore();
-    } else if (it.kind === 'stroke') {
-      if (it.width > 0) drawStroke(ctx, it, subpaths, path, closedShape, sw);
-    } else if (it.effect.type === 'innerShadow') {
-      shadowOnly(ctx, path, fillRule, it.effect, sw, opts.pixelScale, true);
+  const paintItems = (list: typeof items) => {
+    for (const it of list) {
+      if (!it.visible) continue;
+      if (it.kind === 'fill') {
+        ctx.save();
+        ctx.globalCompositeOperation = blendOp(it.blend);
+        ctx.fillStyle = paintStyle(ctx, it.paint, sw, it.opacity);
+        ctx.fill(path, fillRule);
+        ctx.restore();
+      } else if (it.kind === 'stroke') {
+        if (it.width > 0) drawStroke(ctx, it, subpaths, path, closedShape, sw);
+      } else if (it.effect.type === 'innerShadow') {
+        shadowOnly(ctx, path, fillRule, it.effect, sw, opts.pixelScale, true);
+      }
     }
-  }
+  };
+  if (!content) return paintItems(items);
+  paintItems(items.filter((i) => i.kind === 'fill'));
+  content();
+  paintItems(items.filter((i) => i.kind !== 'fill'));
 }
 
 function drawText(ctx: Ctx, n: TextNode, doc: CurvsDocument, opts: RenderOptions) {
@@ -266,6 +284,7 @@ export function getImage(src: string, onLoad?: () => void): HTMLImageElement | n
 function drawImage(ctx: Ctx, n: ImageNode, doc: CurvsDocument, opts: RenderOptions) {
   const src = doc.assets[n.asset];
   const img = src ? getImage(src, opts.onAsset) : null;
+  const rect = imageRect(n);
   if (opts.outline || !img) {
     ctx.save();
     ctx.strokeStyle = opts.outlineColor ?? 'rgba(128,128,128,.8)';
@@ -274,8 +293,13 @@ function drawImage(ctx: Ctx, n: ImageNode, doc: CurvsDocument, opts: RenderOptio
     ctx.restore();
     if (!img) return;
   }
-  if (n.crop) ctx.drawImage(img, n.crop.x, n.crop.y, n.crop.width, n.crop.height, 0, 0, n.width, n.height);
-  else ctx.drawImage(img, 0, 0, n.width, n.height);
+  const bitmap = () => {
+    if (n.crop) ctx.drawImage(img, n.crop.x, n.crop.y, n.crop.width, n.crop.height, 0, 0, n.width, n.height);
+    else ctx.drawImage(img, 0, 0, n.width, n.height);
+  };
+  if (opts.outline) return bitmap();
+  // Same stack as a rectangle, with the photo between the fills and the strokes.
+  drawShape(ctx, n, rect, doc, opts, bitmap);
 }
 
 function needsLayer(n: SceneNode) {

@@ -17,6 +17,8 @@ const UI_KEYS: (keyof EditorState['ui'])[] = [
   'penMode',
   'starPoints',
   'starPolygon',
+  'shapeKind',
+  'shapeParams',
 ];
 
 export function loadPrefs() {

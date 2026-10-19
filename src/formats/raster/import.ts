@@ -5,7 +5,7 @@ import { createDocument, makeGroup } from '../../core/document';
 import { emptyReport, note, type ImportOptions } from '../types';
 import { bytesToDataUrl, extForMime, readImageSize, sha256Hex, sniffImageMime } from '../shared/bytes';
 
-export const IMAGE_NOTE = 'Placed as an image. Image Trace arrives in a later version.';
+export const IMAGE_NOTE = 'Placed as an image. Use Trace image to turn it into vector shapes.';
 
 /** An image node for placing a bitmap into any document, plus its asset key and data URL. */
 export async function imageNodeFromFile(

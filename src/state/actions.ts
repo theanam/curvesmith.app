@@ -22,6 +22,7 @@ import {
   removeNodes,
   worldMatrix,
   clone,
+  isEvenOdd,
 } from '../core/document';
 import { multiply, invert, translate, IDENTITY } from '../core/matrix';
 import { nodeSubpaths } from '../core/geometry/node';
@@ -487,7 +488,7 @@ export async function divideSelection() {
     return {
       subpaths: nodeSubpaths(loc.node, od.doc),
       transform: multiply(inv, worldMatrix(loc)),
-      evenOdd: false,
+      evenOdd: isEvenOdd(loc.node),
       appearance: loc.node.appearance,
     };
   });
@@ -545,6 +546,7 @@ export async function convertToPath() {
         }
         const src = locate(doc, id)!.node;
         const p = makePath(flattenToParentSpace(src, doc), clone(n.appearance), n.name);
+        if (isEvenOdd(src)) p.fillRule = 'evenodd';
         p.opacity = n.opacity;
         p.blend = n.blend;
         const sib = loc.siblings as Draft<SceneNode>[];

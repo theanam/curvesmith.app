@@ -121,6 +121,24 @@ export function HelpPage() {
           </li>
           <li>Divide splits overlaps into separate pieces.</li>
           <li>The Shape builder (⇧M) merges regions you drag across. ⌥-drag erases them.</li>
+          <li>
+            The Shapes tool (*) draws 28 editable shapes. Click it again to pick one; edit its settings in the
+            inspector.
+          </li>
+        </ul>
+      ),
+    },
+    {
+      icon: 'wand',
+      title: 'Image Trace',
+      body: (
+        <ul>
+          <li>Select a placed image and choose Trace image in the inspector or the Object menu.</li>
+          <li>Start from a preset, then tune colors, smoothness and corners while the preview updates.</li>
+          <li>
+            On-device AI can cut out the subject or upscale small images first. The models download once and
+            run on your computer.
+          </li>
         </ul>
       ),
     },
@@ -251,8 +269,9 @@ export function AboutPage() {
           </h2>
           <p>
             React, Zustand and Immer · Skia PathOps for booleans · pdf-lib and opentype.js · fflate · Radix UI
-            and cmdk. Bricolage Grotesque, Geist and Geist Mono under the SIL Open Font License; document
-            fonts from Google Fonts.
+            and cmdk · ONNX Runtime Web with U²-Netp (Apache-2.0) and Real-ESRGAN (BSD-3-Clause) for on-device
+            AI. Bricolage Grotesque, Geist and Geist Mono under the SIL Open Font License; document fonts from
+            Google Fonts.
           </p>
         </section>
       </div>

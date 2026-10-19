@@ -222,7 +222,7 @@ describe('image import', () => {
     expect(doc.artboards[0].children[0].name).toBe('photo');
     expect(Object.keys(doc.assets)).toHaveLength(1);
     expect(report.warnings).toEqual([IMAGE_NOTE]);
-    expect(IMAGE_NOTE).toBe('Placed as an image. Image Trace arrives in a later version.');
+    expect(IMAGE_NOTE).toBe('Placed as an image. Use Trace image to turn it into vector shapes.');
   });
 
   it('rejects non-images', async () => {

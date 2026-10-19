@@ -10,11 +10,19 @@ import {
   removeNodes,
   worldMatrix,
   clone,
+  isEvenOdd,
 } from '../core/document';
 import { nodeSubpaths } from '../core/geometry/node';
 import { combine, divide, loadPathKit, pathKitReady } from '../core/booleans';
-import { flattenSubpath, pointInPolygon, subpathsBounds, transformSubpath } from '../core/geometry/bezier';
-import { hitLeaf } from '../render/hittest';
+import {
+  flattenSubpath,
+  pointInPolygon,
+  rectsIntersect,
+  subpathsBounds,
+  transformSubpath,
+} from '../core/geometry/bezier';
+import { hitLeaf, hitTest } from '../render/hittest';
+import { selectionBounds } from '../core/transform';
 import { mutate } from '../state/store';
 import { OVERLAY, traceScreen, viewMatrix } from '../render/overlay';
 import { inDocOrder } from '../state/actions';
@@ -32,12 +40,59 @@ let hover = -1;
 let picked = new Set<number>();
 let erasing = false;
 
-/** Overlapping regions of the selected shapes, in the parent space of the top-most shape. */
+const buildable = (n: SceneNode | undefined) =>
+  !!n &&
+  n.visible &&
+  !n.locked &&
+  n.type !== 'group' &&
+  n.type !== 'text' &&
+  n.type !== 'image' &&
+  n.type !== 'clipGroup' &&
+  n.type !== 'instance';
+
+/** Shapes picked up automatically under the pointer when fewer than two are selected. */
+let autoIds: string[] = [];
+
+/** The shape under the pointer plus every sibling that overlaps it (and those overlapping them). */
+export function overlappingCluster(
+  doc: CurvsDocument,
+  world: Vec,
+  tol: number,
+  isolation: string | null,
+): string[] {
+  // Deep: shapes inside groups (like a set of waves) are picked up together with their overlapping siblings.
+  const hit = hitTest(doc, world, tol, { isolation, deep: true });
+  if (!hit || !buildable(hit.node)) return [];
+  const loc = locate(doc, hit.node.id)!;
+  const candidates = loc.siblings.filter((n) => buildable(n)).slice(0, 60);
+  const boxes = new Map(candidates.map((n) => [n.id, selectionBounds(doc, [n.id])]));
+  const cluster = new Set([hit.node.id]);
+  for (let pass = 0; pass < 3; pass++) {
+    for (const n of candidates) {
+      if (cluster.has(n.id)) continue;
+      const b = boxes.get(n.id);
+      if (
+        b &&
+        [...cluster].some((id) => {
+          const c = boxes.get(id);
+          return c && rectsIntersect(b, c);
+        })
+      )
+        cluster.add(n.id);
+    }
+  }
+  return cluster.size > 1 ? inDocOrder(doc, [...cluster]) : [];
+}
+
+/** Selected shapes when two or more are selected, otherwise the overlapping shapes under the pointer. */
+function targetIds(api: ToolApi): string[] {
+  const sel = inDocOrder(api.doc, api.od.selection).filter((id) => buildable(locate(api.doc, id)?.node));
+  return sel.length >= 2 ? sel : autoIds.filter((id) => locate(api.doc, id));
+}
+
+/** Overlapping regions of the target shapes, in the parent space of the top-most shape. */
 function regions(api: ToolApi): Cache {
-  const ids = inDocOrder(api.doc, api.od.selection).filter((id) => {
-    const n = locate(api.doc, id)?.node;
-    return n && n.type !== 'group' && n.type !== 'text' && n.type !== 'image';
-  });
+  const ids = targetIds(api);
   const key = ids.join(',');
   if (cache && cache.key === key && cache.doc === api.doc) return cache;
   if (ids.length < 2) return (cache = null);
@@ -54,7 +109,11 @@ function regions(api: ToolApi): Cache {
   });
   const pieces =
     divide(
-      sources.map((s) => ({ subpaths: nodeSubpaths(s.node, api.doc), transform: s.m, evenOdd: false })),
+      sources.map((s) => ({
+        subpaths: nodeSubpaths(s.node, api.doc),
+        transform: s.m,
+        evenOdd: isEvenOdd(s.node),
+      })),
     ) ?? [];
   const out: Region[] = pieces.map((sp) => {
     const polys = sp.map((s) => flattenSubpath(s, 0.5));
@@ -98,7 +157,7 @@ function regionAt(api: ToolApi, world: Vec): number {
 function commit(api: ToolApi) {
   const c = regions(api);
   if (!c || !picked.size) return;
-  const ids = inDocOrder(api.doc, api.od.selection);
+  const ids = targetIds(api);
   const keep = c.regions.filter((_, i) => !picked.has(i));
   const chosen = c.regions.filter((_, i) => picked.has(i));
   const result: SceneNode[] = [];
@@ -133,9 +192,22 @@ export const builderTool: Tool = {
     picked = new Set();
     const i = regionAt(api, e.world);
     if (i >= 0) picked.add(i);
+    else
+      api.overlay.hud = {
+        at: e.screen,
+        lines: [regions(api) ? 'Press inside a highlighted region' : 'Hover where two shapes overlap'],
+      };
     api.render();
   },
   move(e, api) {
+    if (!e.dragging && regionAt(api, e.world) < 0) {
+      // Pick up whatever overlaps under the pointer (no need to select first).
+      const next = overlappingCluster(api.doc, e.world, api.px(3), api.od.isolation);
+      if (next.join() !== autoIds.join()) {
+        autoIds = next;
+        cache = null;
+      }
+    }
     const i = regionAt(api, e.world);
     if (e.dragging && i >= 0) picked.add(i);
     if (i !== hover || e.dragging) {
@@ -144,8 +216,10 @@ export const builderTool: Tool = {
     }
   },
   up(_e, api) {
+    api.overlay.hud = null;
     commit(api);
     picked = new Set();
+    autoIds = [];
     api.render();
   },
   overlay(ctx, api) {
@@ -174,5 +248,6 @@ export const builderTool: Tool = {
   cancel() {
     picked = new Set();
     hover = -1;
+    autoIds = [];
   },
 };

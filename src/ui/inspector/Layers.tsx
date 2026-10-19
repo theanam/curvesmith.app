@@ -13,7 +13,7 @@ import {
 } from '../../state/store';
 import * as A from '../../state/actions';
 import { Icon } from '../icons';
-import { nodeIcon } from './Design';
+import { NodeIcon } from './Design';
 import { Tip } from '../controls/Tooltip';
 import { inDocOrder } from '../../state/actions';
 
@@ -142,7 +142,7 @@ function Row({
         ) : (
           <span style={{ width: 14 }} />
         )}
-        <Icon name={nodeIcon(n)} size={14} stroke={1.7} />
+        <NodeIcon n={n} />
         <span className="layer-name">
           {renaming ? (
             <input

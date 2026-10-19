@@ -22,6 +22,7 @@ import { TOOLS, type ToolId } from '../tools/ids';
 import { exportAgain, placeImage, printDocument } from './io';
 import { navigate } from '../ui/router';
 import { createOutlines, makeSymbol } from './extra';
+import { openTrace, selectedImage } from './trace';
 
 export type Category = 'File' | 'Edit' | 'Object' | 'Type' | 'View' | 'Help' | 'Tool';
 
@@ -439,6 +440,15 @@ export const COMMANDS: Command[] = [
     category: 'Object',
     run: A.releaseCompound,
     enabled: hasSel,
+    doc: true,
+  },
+  {
+    id: 'object.traceImage',
+    title: 'Trace image…',
+    category: 'Object',
+    keywords: 'vectorize vectorise bitmap raster photo convert',
+    run: () => openTrace(),
+    enabled: () => !!selectedImage(),
     doc: true,
   },
   {
@@ -903,6 +913,7 @@ export const MENUS: { label: string; items: (string | '-')[] }[] = [
       'object.releaseCompoundPath',
       'object.clip',
       'object.outlineStroke',
+      'object.traceImage',
       'object.join',
       'object.simplify',
       'object.reverse',

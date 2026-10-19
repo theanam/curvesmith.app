@@ -95,6 +95,8 @@ export function sampleDoc(): CurvsDocument {
     height: 40,
   } as unknown as SceneNode;
   delete (img as unknown as Record<string, unknown>).corners;
+  // Placed images start without fills or strokes (see raster/import.ts).
+  img.appearance = { items: [] };
   img.name = 'Photo';
   ab.children = [rect, ell, path, g, text, img];
   return doc;

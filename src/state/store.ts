@@ -17,6 +17,8 @@ import { INK } from '../core/document';
 import { hexToColor } from '../core/color';
 import { newId } from '../core/id';
 import type { ToolId } from '../tools/ids';
+import type { ShapeToolKind } from '../core/shapeCatalog';
+import type { ShapeParams } from '../core/geometry/multishape';
 
 export type ViewState = { zoom: number; panX: number; panY: number };
 
@@ -63,7 +65,8 @@ export type Dialog =
   | 'tour'
   | 'importReport'
   | 'closeConfirm'
-  | 'symbol';
+  | 'symbol'
+  | 'trace';
 
 export type UiState = {
   hideAll: boolean;
@@ -79,6 +82,9 @@ export type UiState = {
   penMode: 'pen' | 'smart' | 'polygon' | 'line';
   starPolygon: boolean;
   starPoints: number;
+  /** Shape drawn by the Shapes tool, and the last parameters used per shape. */
+  shapeKind: ShapeToolKind;
+  shapeParams: Record<string, ShapeParams>;
   drawer: boolean;
   historyOpen: boolean;
 };
@@ -123,6 +129,8 @@ export const DEFAULT_UI: UiState = {
   penMode: 'pen',
   starPolygon: false,
   starPoints: 5,
+  shapeKind: 'star',
+  shapeParams: {},
   drawer: false,
   historyOpen: false,
 };

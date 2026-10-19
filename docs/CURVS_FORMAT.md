@@ -62,6 +62,7 @@ Common fields: `id`, `name`, `visible`, `locked`, `opacity` (0–1), `blend` (CS
 | `rect` | `width`, `height`, `corners: [Corner×4]` (`{ radius, kind: "round" \| "chamfer" \| "inset" }`) |
 | `ellipse` | `rx`, `ry`, `arcStart?`, `arcEnd?`, `pie?: boolean` |
 | `star` | `points`, `outerRadius`, `innerRatio`, `rounding`, `polygon: boolean` |
+| `shape` | `kind` (`triangle`, `diamond`, `trapezoid`, `parallelogram`, `gem`, `doubleStar`, `squareStar`, `flower`, `cog`, `arrow`, `chevron`, `cross`, `bolt`, `donut`, `frame`, `pie`, `arc`, `segment`, `crescent`, `cloud`, `calloutRect`, `calloutEllipse`, `tear`, `heart`, `shield`, `spiral`), `width`, `height`, `params` (per-kind numbers and booleans; percents stored as fractions). Painted with the even-odd rule. |
 | `text` | `mode: "point" \| "area" \| "onPath"`, `pathRef?`, `box?`, `runs: [{ text, font, size, tracking, leading, features, fill… }]`, `paragraph: { align, indent… }` |
 | `image` | `asset: "assets/<sha256>.png"`, `width`, `height`, `crop?` |
 | `boolean` | `op: "union" \| "subtract" \| "intersect" \| "exclude" \| "divide"`, `children: Node[]` (live compound) |
