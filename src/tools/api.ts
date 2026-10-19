@@ -1,5 +1,6 @@
 /* Builds the ToolApi from editor state. Shared by the canvas and the tool tests. */
 import { toleranceScale } from '../state/input';
+import { gridLines, gridOf } from '../core/grid';
 import type { CurvsDocument } from '../core/types';
 import { getState, type OpenDoc } from '../state/store';
 import type { Overlay, PixelSample, ToolApi } from './types';
@@ -40,6 +41,11 @@ export function snapCandidates(d: OpenDoc, exclude: string[], includeNodes: bool
   const ex = new Set(exclude);
   for (const ab of d.doc.artboards) {
     if (s.objects) addRectCandidates(c, { x: ab.x, y: ab.y, width: ab.width, height: ab.height }, 'artboard');
+    if (s.grid) {
+      const g = gridLines(ab, gridOf(d.doc));
+      for (const x of g.xs) c.xs.push({ pos: x, kind: 'grid', span: [ab.y, ab.y + ab.height] });
+      for (const y of g.ys) c.ys.push({ pos: y, kind: 'grid', span: [ab.x, ab.x + ab.width] });
+    }
     if (s.guides && getState().ui.guides)
       for (const g of ab.guides) {
         if (g.axis === 'x') c.xs.push({ pos: ab.x + g.pos, kind: 'guide', span: [ab.y, ab.y + ab.height] });
@@ -131,7 +137,7 @@ export function createToolApi(
       const sn = getState().snapping;
       let q = p;
       let guides: ReturnType<typeof snapPoint>['guides'] = [];
-      if (sn.objects || sn.guides || sn.nodes) {
+      if (sn.objects || sn.guides || sn.nodes || sn.grid) {
         const r = snapPoint(p, snapCandidates(d, exclude, sn.nodes), 6 / view.zoom);
         q = r.point;
         guides = r.guides;

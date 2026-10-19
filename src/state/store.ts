@@ -50,7 +50,14 @@ export type OpenDoc = {
   importReport: ImportReport | null;
 };
 
-export type Snapping = { nodes: boolean; guides: boolean; pixel: boolean; objects: boolean; angles: boolean };
+export type Snapping = {
+  nodes: boolean;
+  guides: boolean;
+  pixel: boolean;
+  objects: boolean;
+  angles: boolean;
+  grid: boolean;
+};
 export type Theme = 'light' | 'dark' | 'system';
 export type Route = 'home' | 'editor' | 'help' | 'about';
 export type HomeSection = 'home' | 'files' | 'libraries';
@@ -75,7 +82,12 @@ export type UiState = {
   layersHeight: number;
   rulers: boolean;
   guides: boolean;
+  /** Guides can't be dragged with the Move tool. */
+  lockGuides: boolean;
+  /** Pixel grid at high zoom. */
   grid: boolean;
+  /** The document's layout grid. */
+  showGrid: boolean;
   outline: boolean;
   showAllHandles: boolean;
   pencilSmoothing: number;
@@ -122,7 +134,9 @@ export const DEFAULT_UI: UiState = {
   layersHeight: 262,
   rulers: true,
   guides: true,
+  lockGuides: false,
   grid: false,
+  showGrid: false,
   outline: false,
   showAllHandles: true,
   pencilSmoothing: 0.4,
@@ -142,7 +156,7 @@ const initial: EditorState = {
   activeKey: null,
   tool: 'move',
   springTool: null,
-  snapping: { nodes: true, guides: true, pixel: false, objects: true, angles: true },
+  snapping: { nodes: true, guides: true, pixel: false, objects: true, angles: true, grid: false },
   theme: 'system',
   ui: DEFAULT_UI,
   defaults: { fill: hexToColor('#D9D6D0'), stroke: INK, strokeWidth: 1, focus: 'fill' },

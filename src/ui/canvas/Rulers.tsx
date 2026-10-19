@@ -22,6 +22,7 @@ export function Rulers({ od, size }: { od: OpenDoc; size: { w: number; h: number
   const vRef = useRef<HTMLCanvasElement>(null);
   const cursor = useRef<Vec | null>(null);
   const theme = useEditor((s) => s.theme);
+  const guidesShown = useEditor((s) => s.ui.guides);
 
   useEffect(() => {
     const draw = () => {
@@ -110,6 +111,8 @@ export function Rulers({ od, size }: { od: OpenDoc; size: { w: number; h: number
   }, [size, theme]);
 
   const startGuide = (axis: 'x' | 'y') => (e: React.PointerEvent) => {
+    // Hidden guides stay hidden: a drag from the ruler makes nothing.
+    if (!getState().ui.guides) return;
     const host = document.querySelector('[data-canvas-host]') as HTMLElement | null;
     if (!host || !od.view) return;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -133,6 +136,8 @@ export function Rulers({ od, size }: { od: OpenDoc; size: { w: number; h: number
     const up = (ev: PointerEvent) => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      if (ev.type === 'pointercancel') return cancelGesture();
       const r = host.getBoundingClientRect();
       const inside =
         ev.clientX >= r.left && ev.clientY >= r.top && ev.clientX <= r.right && ev.clientY <= r.bottom;
@@ -141,14 +146,23 @@ export function Rulers({ od, size }: { od: OpenDoc; size: { w: number; h: number
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
 
   return (
     <>
-      <div className="ruler h" onPointerDown={startGuide('y')} title="Drag to add a guide">
+      <div
+        className={`ruler h ${guidesShown ? 'can-guide' : ''}`}
+        onPointerDown={startGuide('y')}
+        title={guidesShown ? 'Drag to add a guide' : undefined}
+      >
         <canvas ref={hRef} />
       </div>
-      <div className="ruler v" onPointerDown={startGuide('x')} title="Drag to add a guide">
+      <div
+        className={`ruler v ${guidesShown ? 'can-guide' : ''}`}
+        onPointerDown={startGuide('x')}
+        title={guidesShown ? 'Drag to add a guide' : undefined}
+      >
         <canvas ref={vRef} />
       </div>
     </>

@@ -20,6 +20,7 @@ const SNAPS: { key: keyof Snapping; label: string }[] = [
   { key: 'nodes', label: 'Nodes' },
   { key: 'guides', label: 'Guides' },
   { key: 'objects', label: 'Objects' },
+  { key: 'grid', label: 'Grid' },
   { key: 'pixel', label: 'Pixel grid' },
   { key: 'angles', label: 'Angles' },
 ];

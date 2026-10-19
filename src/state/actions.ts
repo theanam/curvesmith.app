@@ -1020,3 +1020,23 @@ export function setColorMode(mode: ColorMode) {
   if (!od || od.doc.colorProfile === mode) return;
   mutate(mode === 'cmyk' ? 'Convert to CMYK' : 'Convert to RGB', (d) => convertDocumentColors(d, mode));
 }
+
+/** A new empty artboard the size of the active one, to the right of all others. */
+export function addArtboard() {
+  const od = activeDoc();
+  if (!od) return;
+  const ab = od.doc.artboards.find((a) => a.id === od.activeArtboard) ?? od.doc.artboards[0];
+  const id = newId('ab');
+  mutate('Add artboard', (d) => {
+    const right = Math.max(...d.artboards.map((a) => a.x + a.width));
+    d.artboards.push({
+      ...clone(ab),
+      id,
+      name: `Artboard ${d.artboards.length + 1}`,
+      x: right + 60,
+      children: [],
+      guides: [],
+    } as never);
+  });
+  updateDoc(od.key, { activeArtboard: id });
+}

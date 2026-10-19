@@ -287,7 +287,7 @@ const SLIDES: Slide[] = [
     title: 'The canvas tells you what is happening',
     points: [
       <>Snap to edges, centers, nodes, guides and the pixel grid. Guides say what they snapped to.</>,
-      <>Drag out of a ruler to add a guide.</>,
+      <>Drag a guide out of a ruler; drag it back to remove it. ⌘' shows the grid.</>,
       <>Double-click a group to edit inside it.</>,
     ],
     visual: shot('node-tool', 'Editing a wave with the Node tool, showing handles and a smart guide'),

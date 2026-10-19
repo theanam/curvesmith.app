@@ -111,7 +111,6 @@ test('Shape builder and double-tap work without hover', async ({ app: page }) =>
   await t.tap([700, 650]);
   await page.waitForTimeout(400);
   await t.tap([340, 280]);
-  await page.waitForTimeout(80);
   await t.tap([340, 280]);
   await expect.poll(() => state<boolean>(page, 'od.isolation !== null')).toBe(true);
 });

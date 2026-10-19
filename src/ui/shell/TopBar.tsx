@@ -42,7 +42,13 @@ function Menus() {
                     className="menu-item"
                     disabled={!isEnabled(command(id))}
                     onSelect={() => void run(id)}
+                    data-checked={command(id).checked ? String(command(id).checked!()) : undefined}
                   >
+                    {m.items.some((x) => x !== '-' && command(x).checked) && (
+                      <span className="menu-check" aria-hidden>
+                        {command(id).checked?.() && <Icon name="check" size={13} stroke={2} />}
+                      </span>
+                    )}
                     {command(id).title}
                     {command(id).shortcut && (
                       <span className="kbd-hint">{formatShortcut(command(id).shortcut!)}</span>

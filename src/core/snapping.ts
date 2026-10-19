@@ -1,7 +1,7 @@
 import type { Vec } from './types';
 import type { Rect } from './geometry/bezier';
 
-export type SnapKind = 'edge' | 'center' | 'guide' | 'node' | 'artboard' | 'artboardCenter';
+export type SnapKind = 'edge' | 'center' | 'guide' | 'grid' | 'node' | 'artboard' | 'artboardCenter';
 export type SnapLine = { pos: number; kind: SnapKind; span: [number, number] };
 export type SnapCandidates = { xs: SnapLine[]; ys: SnapLine[]; points: Vec[] };
 /** A smart guide to draw: a line at `pos` on `axis` spanning `from`→`to` (other axis), with an optional label. */

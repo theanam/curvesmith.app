@@ -23,6 +23,7 @@ import { exportAgain, placeImage, printDocument } from './io';
 import { navigate } from '../ui/router';
 import { createOutlines, makeSymbol } from './extra';
 import { openTrace, selectedImage } from './trace';
+import { addGuide, clearGuides, guideCount } from './guides';
 
 export type Category = 'File' | 'Edit' | 'Object' | 'Type' | 'View' | 'Help' | 'Tool';
 
@@ -38,6 +39,8 @@ export type Command = {
   enabled?: () => boolean;
   /** Needs an open document. */
   doc?: boolean;
+  /** On/off state for toggles, shown as a check in menus. */
+  checked?: () => boolean;
 };
 
 export const IS_MAC =
@@ -680,6 +683,7 @@ export const COMMANDS: Command[] = [
     title: 'Show rulers',
     category: 'View',
     shortcut: 'Mod+R',
+    checked: () => getState().ui.rulers,
     run: () => setUi({ rulers: !getState().ui.rulers }),
     doc: true,
   },
@@ -688,14 +692,68 @@ export const COMMANDS: Command[] = [
     title: 'Show guides',
     category: 'View',
     shortcut: 'Mod+;',
+    checked: () => getState().ui.guides,
     run: () => setUi({ guides: !getState().ui.guides }),
     doc: true,
   },
   {
+    id: 'view.lockGuides',
+    title: 'Lock guides',
+    category: 'View',
+    shortcut: 'Mod+Alt+;',
+    checked: () => getState().ui.lockGuides,
+    run: () => setUi({ lockGuides: !getState().ui.lockGuides }),
+    doc: true,
+  },
+  {
+    id: 'view.addGuideV',
+    title: 'Add vertical guide',
+    category: 'View',
+    keywords: 'guide line column',
+    run: () => addGuide('x'),
+    doc: true,
+  },
+  {
+    id: 'view.addGuideH',
+    title: 'Add horizontal guide',
+    category: 'View',
+    keywords: 'guide line row baseline',
+    run: () => addGuide('y'),
+    doc: true,
+  },
+  {
+    id: 'view.clearGuides',
+    title: 'Clear guides',
+    category: 'View',
+    run: () => clearGuides(),
+    enabled: () => guideCount(activeDoc()) > 0,
+    doc: true,
+  },
+  {
     id: 'view.grid',
-    title: 'Show pixel grid',
+    title: 'Show grid',
     category: 'View',
     shortcut: "Mod+'",
+    keywords: 'layout grid graph paper',
+    checked: () => getState().ui.showGrid,
+    run: () => setUi({ showGrid: !getState().ui.showGrid }),
+    doc: true,
+  },
+  {
+    id: 'view.snapGrid',
+    title: 'Snap to grid',
+    category: 'View',
+    shortcut: "Mod+Shift+'",
+    checked: () => getState().snapping.grid,
+    run: () => setState({ snapping: { ...getState().snapping, grid: !getState().snapping.grid } }),
+    doc: true,
+  },
+  {
+    id: 'view.pixelGrid',
+    title: 'Show pixel grid',
+    category: 'View',
+    shortcut: "Mod+Alt+'",
+    checked: () => getState().ui.grid,
     run: () => setUi({ grid: !getState().ui.grid }),
     doc: true,
   },
@@ -705,6 +763,7 @@ export const COMMANDS: Command[] = [
     category: 'View',
     shortcut: 'Mod+Alt+Y',
     keywords: 'wireframe',
+    checked: () => getState().ui.outline,
     run: () => setUi({ outline: !getState().ui.outline }),
     doc: true,
   },
@@ -937,7 +996,14 @@ export const MENUS: { label: string; items: (string | '-')[] }[] = [
       '-',
       'view.rulers',
       'view.guides',
+      'view.lockGuides',
+      'view.addGuideV',
+      'view.addGuideH',
+      'view.clearGuides',
+      '-',
       'view.grid',
+      'view.snapGrid',
+      'view.pixelGrid',
       'view.outline',
       'view.snap',
       '-',

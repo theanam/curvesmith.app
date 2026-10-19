@@ -7,6 +7,9 @@ export type Vec = [number, number];
 /** Affine matrix [a, b, c, d, e, f] — x' = a*x + c*y + e, y' = b*x + d*y + f. */
 export type Matrix = [number, number, number, number, number, number];
 
+/** Document grid: major lines every `spacing` pt, each split into `subdivisions`. */
+export type GridSettings = { spacing: number; subdivisions: number; style: 'lines' | 'dots' };
+
 /** Document color mode. */
 export type ColorMode = 'srgb' | 'cmyk';
 
@@ -202,6 +205,8 @@ export type FontEntry = { family: string; style: string; file?: string };
 export type CurvsDocument = {
   id: string;
   units: Unit;
+  /** Layout grid; missing means the default for the document's units. */
+  grid?: GridSettings;
   /** RGB documents keep screen colors; CMYK documents keep ink values and export DeviceCMYK. */
   colorProfile: ColorMode;
   swatches: Swatch[];

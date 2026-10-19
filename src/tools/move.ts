@@ -37,6 +37,8 @@ import {
   shapeWidgetAt,
 } from './shapeHandles';
 import type { Draft } from 'immer';
+import { guideAt, type GuideRef } from '../state/guides';
+import { formatNumber, fromPt } from '../core/units';
 
 type Mode =
   | { kind: 'idle' }
@@ -44,7 +46,8 @@ type Mode =
   | { kind: 'scale'; ids: string[]; box: Matrix; handle: BoxHandle; rotation: number }
   | { kind: 'rotate'; ids: string[]; center: Vec; start: number }
   | { kind: 'marquee'; additive: boolean }
-  | { kind: 'widget' };
+  | { kind: 'widget' }
+  | { kind: 'guide'; ref: GuideRef; axis: 'x' | 'y' };
 
 let mode: Mode = { kind: 'idle' };
 
@@ -101,6 +104,12 @@ export const moveTool: Tool = {
       beginGesture();
       return;
     }
+    const guide = grabbableGuide(api, e.world);
+    if (guide) {
+      mode = { kind: 'guide', ref: guide, axis: guide.axis };
+      beginGesture();
+      return;
+    }
     const hit = hitTest(api.doc, e.world, api.px(4), { deep: e.mod, isolation: api.od.isolation });
     if (!hit) {
       if (!e.shift) select([]);
@@ -128,7 +137,10 @@ export const moveTool: Tool = {
       if (shapeWidgetAt(api, e.screen)) api.overlay.cursor = 'pointer';
       else if (h === 'rotate') api.overlay.cursor = ROTATE_CURSOR;
       else if (h) api.overlay.cursor = resizeCursor(h.handle.id, h.rotation);
-      else api.overlay.cursor = null;
+      else {
+        const g = grabbableGuide(api, e.world);
+        api.overlay.cursor = g ? (g.axis === 'x' ? 'col-resize' : 'row-resize') : null;
+      }
       const hit = hitTest(api.doc, e.world, api.px(4), { deep: e.mod, isolation: api.od.isolation });
       if ((hit?.node.id ?? null) !== api.overlay.hoverId) {
         api.overlay.hoverId = hit?.node.id ?? null;
@@ -138,6 +150,7 @@ export const moveTool: Tool = {
     }
     if (!e.moved) return;
     const unit = api.doc.units;
+    if (mode.kind === 'guide') return dragGuide(mode, e.world, e.screen, api);
     if (mode.kind === 'widget') dragShapeWidget(e, api);
     else if (mode.kind === 'move') {
       if (e.alt && !mode.originals) {
@@ -154,7 +167,7 @@ export const moveTool: Tool = {
       if (mode.base) {
         const moved = { ...mode.base, x: mode.base.x + dx, y: mode.base.y + dy };
         const s = getState().snapping;
-        if (s.objects || s.guides) {
+        if (s.objects || s.guides || s.grid) {
           const snap = snapRect(moved, api.snapCandidates(mode.ids), api.px(6));
           if (!e.shift || dx !== 0) dx += snap.dx;
           if (!e.shift || dy !== 0) dy += snap.dy;
@@ -248,6 +261,21 @@ export const moveTool: Tool = {
     mode = { kind: 'idle' };
     api.overlay.guides = [];
     api.overlay.hud = null;
+    if (m.kind === 'guide') {
+      // Dropped on a ruler or off the canvas: the guide goes.
+      const host = document.querySelector('[data-canvas-host]') as HTMLElement | null;
+      const [w, h] = [host?.clientWidth ?? Infinity, host?.clientHeight ?? Infinity];
+      const off = e.screen[0] < 0 || e.screen[1] < 0 || e.screen[0] > w || e.screen[1] > h;
+      if (off) {
+        updateGesture(
+          (d) => void d.artboards.find((a) => a.id === m.ref.artboard)?.guides.splice(m.ref.index, 1),
+        );
+        endGesture('Delete guide');
+      } else if (e.moved) endGesture('Move guide');
+      else cancelGesture();
+      api.render();
+      return;
+    }
     if (m.kind === 'widget') endShapeWidget(api);
     else if (m.kind === 'marquee') {
       const r = api.overlay.marquee;
@@ -335,3 +363,39 @@ export const moveTool: Tool = {
     api.overlay.marquee = null;
   },
 };
+
+/** A guide the Move tool can pick up: guides showing and unlocked, within a few pixels of the pointer. */
+function grabbableGuide(api: ToolApi, world: Vec) {
+  const ui = getState().ui;
+  if (!ui.guides || ui.lockGuides) return null;
+  return guideAt(api.doc, world, api.px(4));
+}
+
+function dragGuide(m: Extract<Mode, { kind: 'guide' }>, world: Vec, screen: Vec, api: ToolApi) {
+  const ab = api.doc.artboards.find((a) => a.id === m.ref.artboard);
+  if (!ab) return;
+  let pos = m.axis === 'x' ? world[0] : world[1];
+  // Snap to object edges and the grid (never to the guide's own old position).
+  const sn = getState().snapping;
+  if (sn.objects || sn.grid) {
+    const c = api.snapCandidates([]);
+    const lines = (m.axis === 'x' ? c.xs : c.ys).filter((l) => l.kind !== 'guide');
+    let best = api.px(6);
+    for (const l of lines)
+      if (Math.abs(l.pos - pos) < best) {
+        best = Math.abs(l.pos - pos);
+        pos = l.pos;
+      }
+  }
+  const rel = Math.round((pos - (m.axis === 'x' ? ab.x : ab.y)) * 100) / 100;
+  updateGesture((d) => {
+    const g = d.artboards.find((a) => a.id === m.ref.artboard)?.guides[m.ref.index];
+    if (g) g.pos = rel;
+  });
+  const unit = api.doc.units;
+  api.overlay.hud = {
+    at: screen,
+    lines: [`${m.axis === 'x' ? 'X' : 'Y'} ${formatNumber(fromPt(rel, unit), 2)} ${unit}`],
+  };
+  api.render();
+}

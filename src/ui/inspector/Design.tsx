@@ -18,7 +18,7 @@ import type {
 import { getState, mutate, setUi, useActiveDoc, type OpenDoc } from '../../state/store';
 import { ShapeGlyph, ShapeList } from '../shapes/ShapePicker';
 import { defaultParams, isMultiShape, shapeDef, type ShapeToolKind } from '../../core/shapeCatalog';
-import { childrenOf, locate, typeLabel, clone } from '../../core/document';
+import { childrenOf, locate, typeLabel } from '../../core/document';
 import { applyWorldDelta, rotateAbout, selectionBounds, selectionRotation } from '../../core/transform';
 import { multiply, translate } from '../../core/matrix';
 import { fromPt, toPt, UNITS } from '../../core/units';
@@ -33,6 +33,7 @@ import { ColorPopover } from './ColorPicker';
 import { cssColor } from '../../core/color';
 import { detachInstance } from '../../state/extra';
 import { openTrace } from '../../state/trace';
+import { GridSection, GuidesSection } from './GridGuides';
 import { Segmented } from '../controls/Segmented';
 
 const ICON_FOR: Record<SceneNode['type'], IconName> = {
@@ -973,19 +974,7 @@ function DocumentSection({ od }: { od: OpenDoc }) {
               <button
                 className="icon-btn sm"
                 aria-label="Add artboard"
-                onClick={() =>
-                  mutate('Add artboard', (d) => {
-                    const right = Math.max(...d.artboards.map((a) => a.x + a.width));
-                    d.artboards.push({
-                      ...clone(ab),
-                      id: `ab_${Date.now().toString(36)}`,
-                      name: `Artboard ${d.artboards.length + 1}`,
-                      x: right + 60,
-                      children: [],
-                      guides: [],
-                    } as never);
-                  })
-                }
+                onClick={() => A.addArtboard()}
               >
                 <Icon name="plus" />
               </button>
@@ -1074,12 +1063,8 @@ function DocumentSection({ od }: { od: OpenDoc }) {
             <Icon name="swap" size={14} />
           </button>
         </div>
-        {ab.guides.length > 0 && (
-          <button className="small-btn" onClick={() => editAb('Clear guides', (a) => void (a.guides = []))}>
-            Clear {ab.guides.length} guide{ab.guides.length === 1 ? '' : 's'}
-          </button>
-        )}
       </section>
+      <GuidesSection od={od} />
       <section className="insp-section">
         <h3>Document</h3>
         <Segmented
@@ -1109,6 +1094,7 @@ function DocumentSection({ od }: { od: OpenDoc }) {
           {od.doc.colorProfile === 'cmyk' ? 'Print: PDF, AI and EPS export CMYK inks' : 'Screen: sRGB colors'}
         </div>
       </section>
+      <GridSection od={od} />
     </>
   );
 }

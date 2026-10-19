@@ -99,6 +99,24 @@ export function HelpPage() {
       ),
     },
     {
+      icon: 'ruler',
+      title: 'Guides and grid',
+      body: (
+        <ul>
+          <li>
+            Drag out of a ruler to add a guide, or use Add vertical/horizontal in the Guides section. Drag a
+            guide with the Move tool; drop it on a ruler to remove it. Exact positions are in the Guides
+            section.
+          </li>
+          <li>
+            {formatShortcut("Mod+'")} shows the grid. Set its spacing, subdivisions and style under Grid, or
+            from the Grid control in the bottom bar. Turn on Grid in Snap to snap to it.
+          </li>
+          <li>The bottom bar also switches artboards, sets size, units and color mode, and saves.</li>
+        </ul>
+      ),
+    },
+    {
       icon: 'command',
       title: 'Numbers',
       body: (

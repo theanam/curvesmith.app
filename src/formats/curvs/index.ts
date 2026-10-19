@@ -21,10 +21,19 @@ export const FORMAT_VERSION = 1;
 declare const __APP_VERSION__: string | undefined;
 const appVersion = () => (typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '1.0.0');
 
+const isGrid = (g: unknown): g is NonNullable<CurvsDocument['grid']> =>
+  !!g &&
+  typeof g === 'object' &&
+  (g as { spacing?: unknown }).spacing !== undefined &&
+  Number((g as { spacing: number }).spacing) > 0 &&
+  Number((g as { subdivisions: number }).subdivisions) >= 1 &&
+  ['lines', 'dots'].includes((g as { style: string }).style);
+
 const DOC_KEYS = [
   'id',
   'units',
   'colorProfile',
+  'grid',
   'swatches',
   'styles',
   'symbols',
@@ -175,6 +184,7 @@ export async function writeCurvs(doc: CurvsDocument, opts: WriteCurvsOptions = {
     id: doc.id,
     units: doc.units,
     colorProfile: doc.colorProfile,
+    ...(doc.grid ? { grid: doc.grid } : {}),
     swatches: doc.swatches,
     styles: doc.styles,
     symbols: doc.symbols.map((s) => ({ ...s, root: nodeToJson(s.root) })),
@@ -296,6 +306,7 @@ export async function readCurvs(bytes: Uint8Array): Promise<CurvsDocument> {
     id: typeof raw.id === 'string' ? raw.id : `doc_${Date.now()}`,
     units: (raw.units as CurvsDocument['units']) ?? 'px',
     colorProfile: raw.colorProfile === 'cmyk' ? 'cmyk' : 'srgb',
+    ...(isGrid(raw.grid) ? { grid: raw.grid } : {}),
     swatches: (raw.swatches as CurvsDocument['swatches']) ?? [],
     styles: (raw.styles as CurvsDocument['styles']) ?? [],
     symbols,

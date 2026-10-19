@@ -391,3 +391,46 @@ test('traces a placed image into vector layers', async ({ app: page }) => {
   await page.keyboard.press(`${mod}+z`);
   await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0].type')).toBe('image');
 });
+
+test('guides come out of a ruler, move with the Move tool, and go when dropped on a ruler; the grid toggles', async ({
+  app: page,
+}) => {
+  await newA4(page);
+  const guides = () => state<{ axis: string; pos: number }[]>(page, 'od.doc.artboards[0].guides');
+  const ruler = (await page.locator('.ruler.v').boundingBox())!;
+  await page.mouse.move(ruler.x + 8, 400);
+  await page.mouse.down();
+  await page.mouse.move(600, 400, { steps: 5 });
+  await page.mouse.up();
+  expect((await guides()).map((g) => g.axis)).toEqual(['x']);
+  const before = (await guides())[0].pos;
+  await page.mouse.move(600, 600);
+  await page.mouse.down();
+  await page.mouse.move(700, 600, { steps: 5 });
+  await page.mouse.up();
+  expect((await guides())[0].pos).toBeGreaterThan(before);
+  await page.mouse.move(700, 500);
+  await page.mouse.down();
+  await page.mouse.move(ruler.x + 5, 500, { steps: 5 });
+  await page.mouse.up();
+  expect(await guides()).toEqual([]);
+  await page.getByRole('button', { name: 'Vertical' }).click();
+  expect(await guides()).toHaveLength(1);
+
+  // With guides hidden, dragging from a ruler makes nothing.
+  await page.keyboard.press(`${mod}+;`);
+  await page.mouse.move(ruler.x + 8, 300);
+  await page.mouse.down();
+  await page.mouse.move(650, 300, { steps: 5 });
+  await page.mouse.up();
+  expect(await guides()).toHaveLength(1);
+  await expect(page.locator('.ruler.v')).not.toHaveAttribute('title', /.+/);
+  await page.keyboard.press(`${mod}+;`);
+
+  await page.getByRole('button', { name: 'Grid settings' }).click();
+  await page.getByRole('dialog').getByRole('checkbox', { name: 'Show grid' }).check();
+  expect(await state<boolean>(page, 'window.__curvesmith.getState().ui.showGrid')).toBe(true);
+  await page.keyboard.press('Escape');
+  await page.keyboard.press(`${mod}+'`);
+  expect(await state<boolean>(page, 'window.__curvesmith.getState().ui.showGrid')).toBe(false);
+});

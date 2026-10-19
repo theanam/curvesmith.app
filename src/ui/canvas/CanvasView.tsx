@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Vec } from '../../core/types';
+import type { CurvsDocument, Vec } from '../../core/types';
+import { gridOf, gridPositions, gridStep } from '../../core/grid';
 import {
   getState,
   setActiveArtboard,
@@ -46,6 +47,9 @@ export const requestCanvasRender = () => renderRef?.();
 function cssVar(name: string) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
+
+/** Two taps within this many milliseconds make a double-tap (the usual system double-click interval). */
+const DOUBLE_TAP_MS = 500;
 
 export function CanvasView() {
   const od = useActiveDoc();
@@ -159,7 +163,8 @@ export function CanvasView() {
         ctx.restore();
       }
     }
-    // Pixel grid at high zoom.
+    // Document grid, then the pixel grid at high zoom.
+    if (ui.showGrid) drawDocGrid(ctx, view, d.doc, dpr);
     if (ui.grid && view.zoom >= 6) drawPixelGrid(ctx, view, W, H, dpr);
     // Guides.
     if (ui.guides) {
@@ -425,7 +430,7 @@ export function CanvasView() {
     if (e.pointerType !== 'mouse' && !p.moved) {
       const now = performance.now();
       const t = lastTap.current;
-      if (t && now - t.t < 350 && Math.hypot(t.at[0] - p.screen[0], t.at[1] - p.screen[1]) < 24) {
+      if (t && now - t.t < DOUBLE_TAP_MS && Math.hypot(t.at[0] - p.screen[0], t.at[1] - p.screen[1]) < 24) {
         lastTap.current = null;
         syntheticDbl.current = now;
         const next = makeApi();
@@ -659,6 +664,63 @@ function drawChecker(
     for (let xx = yy % 2; xx * s < w; xx += 2) ctx.fillRect(x + xx * s, y + yy * s, s, s);
   ctx.restore();
 }
+
+/** Smallest on-screen gap (CSS px) at which grid lines are still drawn. */
+const MIN_GRID_GAP = 6;
+
+function drawDocGrid(ctx: CanvasRenderingContext2D, view: ViewState, doc: CurvsDocument, dpr: number) {
+  const g = gridOf(doc);
+  const minor = gridStep(g);
+  // Thin out when zoomed far out: skip subdivisions, then use every 2nd, 4th… major line.
+  let major = g.spacing;
+  while (major * view.zoom < MIN_GRID_GAP) major *= 2;
+  const showMinor = g.subdivisions > 1 && minor * view.zoom >= MIN_GRID_GAP;
+  const dev = (v: number, pan: number) => Math.round((v * view.zoom + pan) * dpr) + 0.5;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  for (const ab of doc.artboards) {
+    const x0 = dev(ab.x, view.panX) - 0.5;
+    const y0 = dev(ab.y, view.panY) - 0.5;
+    const x1 = dev(ab.x + ab.width, view.panX) - 0.5;
+    const y1 = dev(ab.y + ab.height, view.panY) - 0.5;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x0, y0, x1 - x0, y1 - y0);
+    ctx.clip();
+    const lines = (step: number) => ({
+      xs: gridPositions(ab.width, step).map((v) => dev(ab.x + v, view.panX)),
+      ys: gridPositions(ab.height, step).map((v) => dev(ab.y + v, view.panY)),
+    });
+    const draw = (step: number, color: string) => {
+      const { xs, ys } = lines(step);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      if (g.style === 'dots') {
+        const r = Math.max(1, dpr);
+        for (const x of xs) for (const y of ys) ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        return;
+      }
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const x of xs) {
+        ctx.moveTo(x, y0);
+        ctx.lineTo(x, y1);
+      }
+      for (const y of ys) {
+        ctx.moveTo(x0, y);
+        ctx.lineTo(x1, y);
+      }
+      ctx.stroke();
+    };
+    if (showMinor) draw(minor, GRID_MINOR);
+    draw(major, GRID_MAJOR);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+const GRID_MAJOR = 'rgba(43, 95, 107, 0.32)';
+const GRID_MINOR = 'rgba(43, 95, 107, 0.13)';
 
 function drawPixelGrid(ctx: CanvasRenderingContext2D, view: ViewState, W: number, H: number, dpr: number) {
   ctx.save();
