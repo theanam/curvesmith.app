@@ -16,7 +16,7 @@ import type {
 } from '../../core/types';
 import { mutate, type OpenDoc } from '../../state/store';
 import { locate, makeFill, makeStroke, INK, clone } from '../../core/document';
-import { colorToHex, cssColor, paintPrimaryColor, resolveColor, rgb } from '../../core/color';
+import { colorLabel, cssColor, paintPrimaryColor, resolveColor, rgb } from '../../core/color';
 import { newId } from '../../core/id';
 import { ColorPicker } from './ColorPicker';
 import { Icon } from '../icons';
@@ -105,7 +105,7 @@ function paintLabel(p: Paint, od: OpenDoc): string {
     const sw = od.doc.swatches.find((s) => s.id === (p.color as { swatch: string }).swatch);
     return sw?.name ?? 'Swatch';
   }
-  return colorToHex(resolveColor(p.color, od.doc.swatches));
+  return colorLabel(p.color, od.doc);
 }
 
 function ProfilePreview({ profile, width = 56 }: { profile: [number, number][] | null; width?: number }) {

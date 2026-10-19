@@ -7,6 +7,9 @@ export type Vec = [number, number];
 /** Affine matrix [a, b, c, d, e, f] — x' = a*x + c*y + e, y' = b*x + d*y + f. */
 export type Matrix = [number, number, number, number, number, number];
 
+/** Document color mode. */
+export type ColorMode = 'srgb' | 'cmyk';
+
 export type SrgbColor = { space: 'srgb'; r: number; g: number; b: number; a: number };
 export type P3Color = { space: 'display-p3'; r: number; g: number; b: number; a: number };
 export type CmykColor = { space: 'cmyk'; c: number; m: number; y: number; k: number; a: number };
@@ -199,7 +202,8 @@ export type FontEntry = { family: string; style: string; file?: string };
 export type CurvsDocument = {
   id: string;
   units: Unit;
-  colorProfile: 'srgb';
+  /** RGB documents keep screen colors; CMYK documents keep ink values and export DeviceCMYK. */
+  colorProfile: ColorMode;
   swatches: Swatch[];
   styles: Style[];
   symbols: SymbolDef[];

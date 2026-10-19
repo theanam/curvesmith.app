@@ -5,6 +5,7 @@ import { exportEpsString } from '../../../src/formats/eps/export';
 import { epsAdapter } from '../../../src/formats/eps';
 import { createDocument, makeRect, makeText, makeArtboard } from '../../../src/core/document';
 import { ctxFor, sampleDoc } from './helpers';
+import { convertDocumentColors } from '../../../src/core/color';
 
 const fontState = { available: true };
 vi.mock('../../../src/fonts/loader', () => ({
@@ -63,6 +64,15 @@ describe('EPS export', () => {
     expect(eps).toContain('shfill');
     // PNG image decoded to hex samples.
     expect(eps).toContain('/ASCIIHexDecode filter >> image');
+  });
+
+  it('writes CMYK inks and shadings for CMYK documents', async () => {
+    const doc = sampleDoc();
+    convertDocumentColors(doc, 'cmyk');
+    const eps = await exportEpsString(doc, { kind: 'all' }, {}, ctxFor(doc));
+    expect(eps).toMatch(/setcmykcolor\nf$/m);
+    expect(eps).not.toContain('setrgbcolor');
+    expect(eps).toContain('/ColorSpace /DeviceCMYK');
   });
 
   it('outlines text with the font, and falls back to Helvetica without it', async () => {

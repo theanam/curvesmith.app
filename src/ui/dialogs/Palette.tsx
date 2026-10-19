@@ -7,7 +7,7 @@ import { allNodes, locate, typeLabel } from '../../core/document';
 import { Icon, type IconName } from '../icons';
 import { NodeIcon } from '../inspector/Design';
 import { toolDef } from '../../tools/ids';
-import { colorToHex, resolveColor } from '../../core/color';
+import { colorLabel, colorToHex, resolveColor } from '../../core/color';
 import { listRecent, openRecent, type RecentEntry } from '../../state/files';
 import { useEffect, useState } from 'react';
 import './palette.css';
@@ -112,7 +112,11 @@ export function Palette() {
                         style={{ background: `#${colorToHex(resolveColor(sw.color))}` }}
                       />
                       <span>{sw.name}</span>
-                      <span className="muted small mono">#{colorToHex(resolveColor(sw.color))}</span>
+                      <span className="muted small mono">
+                        {od.doc.colorProfile === 'cmyk'
+                          ? colorLabel(sw.color, od.doc)
+                          : `#${colorToHex(resolveColor(sw.color))}`}
+                      </span>
                     </Command.Item>
                   ))}
                 </Command.Group>

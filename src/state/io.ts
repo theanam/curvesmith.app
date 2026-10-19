@@ -8,11 +8,22 @@ import { translate, multiply } from '../core/matrix';
 import { toast } from '../ui/toast';
 import { selectionBounds } from '../core/transform';
 
-export type ScopeKind = 'selection' | 'artboard' | 'all';
+export type ScopeKind = 'selection' | 'artwork' | 'artboard' | 'all';
+
+/** Visible objects on the active artboard: what "Artwork" exports, cropped to their bounds. */
+export function artworkIds(): string[] {
+  const od = activeDoc();
+  const ab = od?.doc.artboards.find((a) => a.id === od.activeArtboard);
+  return ab ? ab.children.filter((n) => n.visible).map((n) => n.id) : [];
+}
 
 export function scopeFor(kind: ScopeKind): ExportScope {
   const od = activeDoc()!;
   if (kind === 'selection' && od.selection.length) return { kind: 'selection', ids: od.selection };
+  if (kind === 'artwork') {
+    const ids = artworkIds();
+    if (ids.length) return { kind: 'selection', ids };
+  }
   if (kind === 'all') return { kind: 'all' };
   return { kind: 'artboard', id: od.activeArtboard };
 }

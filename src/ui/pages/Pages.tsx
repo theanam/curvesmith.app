@@ -149,6 +149,10 @@ export function HelpPage() {
         <ul>
           <li>Each object has an appearance stack: any number of fills, strokes and effects.</li>
           <li>Global colors in Assets update every object that uses them.</li>
+          <li>
+            Choose RGB or CMYK under Document. Print sizes start in CMYK: colors keep exact ink values and
+            PDF, AI and EPS export CMYK.
+          </li>
           <li>Strokes support inside/outside alignment, dashes, arrowheads and width profiles.</li>
         </ul>
       ),

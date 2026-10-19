@@ -612,21 +612,21 @@ function ShapeSection({ od }: { od: OpenDoc }) {
       <section className="insp-section">
         <div className="insp-head">
           <h3>Corners</h3>
-          <select
-            className="field"
-            style={{ width: 100, height: 26 }}
-            aria-label="Corner type"
-            value={r.corners[0].kind}
-            onChange={(e) =>
-              editNode<RectNode>(r.id, 'Corner type', (x) =>
-                x.corners.forEach((c) => (c.kind = e.target.value as RectNode['corners'][0]['kind'])),
-              )
-            }
-          >
-            <option value="round">Round</option>
-            <option value="chamfer">Chamfer</option>
-            <option value="inset">Inset</option>
-          </select>
+          <label className="field" style={{ width: 108, height: 26 }}>
+            <select
+              aria-label="Corner type"
+              value={r.corners[0].kind}
+              onChange={(e) =>
+                editNode<RectNode>(r.id, 'Corner type', (x) =>
+                  x.corners.forEach((c) => (c.kind = e.target.value as RectNode['corners'][0]['kind'])),
+                )
+              }
+            >
+              <option value="round">Round</option>
+              <option value="chamfer">Chamfer</option>
+              <option value="inset">Inset</option>
+            </select>
+          </label>
         </div>
         <NumberField
           label="R"
@@ -641,10 +641,19 @@ function ShapeSection({ od }: { od: OpenDoc }) {
             )
           }
         />
-        <div className="grid4">
-          {(['↖', '↗', '↘', '↙'] as const).map((lbl, i) => (
+        <div className="grid2">
+          {/* Laid out like the corners they edit: top-left, top-right, bottom-left, bottom-right. */}
+          {(
+            [
+              ['↖', 0],
+              ['↗', 1],
+              ['↙', 3],
+              ['↘', 2],
+            ] as const
+          ).map(([lbl, i]) => (
             <NumberField
               key={i}
+              unit={unit}
               label={lbl}
               ariaLabel={`Corner ${i + 1}`}
               value={fromPt(r.corners[i].radius, unit)}
@@ -1069,6 +1078,15 @@ function DocumentSection({ od }: { od: OpenDoc }) {
       </section>
       <section className="insp-section">
         <h3>Document</h3>
+        <Segmented
+          label="Color mode"
+          value={od.doc.colorProfile}
+          onChange={(m) => A.setColorMode(m)}
+          options={[
+            { value: 'srgb', label: 'RGB' },
+            { value: 'cmyk', label: 'CMYK' },
+          ]}
+        />
         <label className="field">
           <span className="label">Units</span>
           <select
@@ -1083,6 +1101,9 @@ function DocumentSection({ od }: { od: OpenDoc }) {
             ))}
           </select>
         </label>
+        <div className="muted doc-stats">
+          {od.doc.colorProfile === 'cmyk' ? 'Print: PDF, AI and EPS export CMYK inks' : 'Screen: sRGB colors'}
+        </div>
       </section>
     </>
   );

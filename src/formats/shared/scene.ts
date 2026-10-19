@@ -5,6 +5,7 @@ import { isEvenOdd } from '../../core/document';
    each object (the formats have no cheap isolated layers). */
 import type {
   BlendMode,
+  Color,
   CurvsDocument,
   ImageNode,
   Matrix,
@@ -18,7 +19,7 @@ import type {
 import { multiply, translate } from '../../core/matrix';
 import { nodeSubpaths } from '../../core/geometry/node';
 import { arrowHeads, profileOutline } from '../../core/geometry/strokes';
-import { resolveColor, rgb } from '../../core/color';
+import { resolveCmyk, resolveColor, rgb } from '../../core/color';
 import { rectSubpaths, uniformCorners } from '../../core/geometry/shapes';
 import { fontKey, type LoadedFont, textOutlines } from './fonts';
 import { imageLayers, imageRect } from '../../core/image';
@@ -299,12 +300,31 @@ export function flatColor(paint: Paint, doc: CurvsDocument) {
 export function resolvedStops(paint: Extract<Paint, { stops: unknown }>, doc: CurvsDocument) {
   const stops = [...paint.stops]
     .sort((a, b) => a.offset - b.offset)
-    .map((s) => ({ offset: Math.max(0, Math.min(1, s.offset)), color: resolveColor(s.color, doc.swatches) }));
-  if (!stops.length) stops.push({ offset: 0, color: rgb(0, 0, 0) });
+    .map((s) => ({
+      offset: Math.max(0, Math.min(1, s.offset)),
+      color: resolveColor(s.color, doc.swatches),
+      components: deviceComponents(s.color, doc),
+    }));
+  if (!stops.length)
+    stops.push({ offset: 0, color: rgb(0, 0, 0), components: deviceComponents(rgb(0, 0, 0), doc) });
   if (stops[0].offset > 0) stops.unshift({ ...stops[0], offset: 0 });
   if (stops[stops.length - 1].offset < 1) stops.push({ ...stops[stops.length - 1], offset: 1 });
   if (stops.length === 1) stops.push({ ...stops[0], offset: 1 });
   return stops;
+}
+
+/** Device color space for print formats: CMYK documents write inks, RGB documents write RGB. */
+export const deviceSpace = (doc: CurvsDocument): 'DeviceCMYK' | 'DeviceRGB' =>
+  doc.colorProfile === 'cmyk' ? 'DeviceCMYK' : 'DeviceRGB';
+
+/** Color components in the document's device space (0–1 each). */
+export function deviceComponents(c: Color, doc: CurvsDocument): number[] {
+  if (doc.colorProfile === 'cmyk') {
+    const k = resolveCmyk(c, doc.swatches);
+    return [k.c, k.m, k.y, k.k];
+  }
+  const r = resolveColor(c, doc.swatches);
+  return [r.r, r.g, r.b];
 }
 
 /** Uniform scale factor of a matrix (for stroke widths when points are pre-transformed). */

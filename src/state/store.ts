@@ -46,7 +46,7 @@ export type OpenDoc = {
   /** Last transform (matrix delta in world space) for Transform Again. */
   lastTransform: [number, number, number, number, number, number] | null;
   exportSettings: Record<string, Record<string, unknown>>;
-  lastExport: { format: string; scope: 'selection' | 'artboard' | 'all'; name: string } | null;
+  lastExport: { format: string; scope: 'selection' | 'artwork' | 'artboard' | 'all'; name: string } | null;
   importReport: ImportReport | null;
 };
 
@@ -235,8 +235,15 @@ export function newDocument(opts: {
   width: number;
   height: number;
   units: CurvsDocument['units'];
+  colorMode?: CurvsDocument['colorProfile'];
 }) {
-  const doc = createDocument({ name: opts.name, width: opts.width, height: opts.height, units: opts.units });
+  const doc = createDocument({
+    name: opts.name,
+    width: opts.width,
+    height: opts.height,
+    units: opts.units,
+    colorMode: opts.colorMode,
+  });
   return openDocument(doc, { name: opts.name ?? 'Untitled', saved: false });
 }
 

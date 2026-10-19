@@ -1756,3 +1756,51 @@ svg.icon {
   color: var(--accent);
   font-weight: 600;
 }
+
+.doc-stats {
+  font-size: var(--text-xs);
+}
+
+/* CMYK needs four fields: give them their own labeled row under the model picker. */
+.cp-channels.wide {
+  order: 3;
+  flex: 1 1 100%;
+}
+
+.cp-channels.wide .label {
+  font-size: 11px;
+}
+
+/* Dropdown fields: the select fills the whole field and shows the same chevron as preset dropdowns. */
+.field:has(> select) {
+  position: relative;
+  cursor: pointer;
+}
+
+.field > select {
+  flex: 1;
+  align-self: stretch;
+  padding-right: 18px;
+}
+
+.field:has(> select)::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--space-2) + 5px);
+  top: 50%;
+  width: 8px;
+  height: 5px;
+  margin-top: -2px;
+  background: var(--muted);
+  pointer-events: none;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.field:has(> select):hover {
+  background: var(--hover);
+}
+
+.field:has(> select):hover::after {
+  background: var(--fg);
+}

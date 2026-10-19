@@ -5,6 +5,7 @@ import type {
   BooleanNode,
   BooleanOp,
   ClipGroupNode,
+  ColorMode,
   CurvsDocument,
   Matrix,
   PathShape,
@@ -30,6 +31,7 @@ import { insertNodeAt, transformSubpath } from '../core/geometry/bezier';
 import { divide, loadPathKit, outlineStroke as outlineStrokeGeom, pathKitReady } from '../core/booleans';
 import { applyWorldDelta, flipMatrix, selectionBounds } from '../core/transform';
 import { newId } from '../core/id';
+import { convertDocumentColors } from '../core/color';
 import { activeDoc, getState, mutate, select, setIsolation, updateDoc } from './store';
 import { toast } from '../ui/toast';
 import { simplifySubpath } from '../core/geometry/fit';
@@ -1010,4 +1012,11 @@ export function addNodeAfterSelected() {
       n.subpaths[s.sp] = insertNodeAt(sp, s.i, 0.5) as never;
     }
   });
+}
+
+/** Switch the document between RGB and CMYK, converting every color (one undo step). */
+export function setColorMode(mode: ColorMode) {
+  const od = activeDoc();
+  if (!od || od.doc.colorProfile === mode) return;
+  mutate(mode === 'cmyk' ? 'Convert to CMYK' : 'Convert to RGB', (d) => convertDocumentColors(d, mode));
 }

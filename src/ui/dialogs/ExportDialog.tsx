@@ -9,7 +9,7 @@ import {
   PDF_COMPATIBILITY,
   type FormatDescriptor,
 } from '../../formats/registry';
-import { runExport, scopeFor, type ScopeKind } from '../../state/io';
+import { artworkIds, runExport, scopeFor, type ScopeKind } from '../../state/io';
 import { renderToCanvas, scopeBounds } from '../../render/raster';
 import { Icon } from '../icons';
 import { NumberField } from '../controls/NumberField';
@@ -279,9 +279,11 @@ export function ExportDialog() {
   const formats = exportFormats();
   const initialFormat = od?.lastExport?.format ?? 'svg';
   const [fid, setFid] = useState(initialFormat);
-  const [kind, setKind] = useState<ScopeKind>(
-    od?.lastExport?.scope ?? (od?.selection.length ? 'selection' : 'artboard'),
-  );
+  const [kind, setKind] = useState<ScopeKind>(() => {
+    const last = od?.lastExport?.scope;
+    if (last && (last !== 'artwork' || artworkIds().length)) return last;
+    return od?.selection.length ? 'selection' : 'artboard';
+  });
   const [name, setName] = useState(od?.lastExport?.name ?? od?.name ?? 'Untitled');
   const [busy, setBusy] = useState(false);
   const f = formats.find((x) => x.id === fid) ?? formats[0];
@@ -330,6 +332,7 @@ export function ExportDialog() {
                 ...(activeDoc()?.selection.length
                   ? [{ value: 'selection' as const, label: 'Selection' }]
                   : []),
+                ...(artworkIds().length ? [{ value: 'artwork' as const, label: 'Artwork only' }] : []),
                 { value: 'artboard', label: 'This artboard' },
                 { value: 'all', label: `All artboards (${od.doc.artboards.length})` },
               ]}

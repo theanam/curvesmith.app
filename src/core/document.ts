@@ -6,6 +6,7 @@ import type {
   Appearance,
   Artboard,
   Color,
+  ColorMode,
   ContainerNode,
   CurvsDocument,
   EllipseNode,
@@ -176,12 +177,13 @@ export function createDocument(opts: {
   width: number;
   height: number;
   units: Unit;
+  colorMode?: ColorMode;
 }): CurvsDocument {
   const ab = makeArtboard(opts.name ?? 'Artboard 1', opts.width, opts.height);
   return {
     id: newId('doc'),
     units: opts.units,
-    colorProfile: 'srgb',
+    colorProfile: opts.colorMode ?? 'srgb',
     swatches: [],
     styles: [],
     symbols: [],

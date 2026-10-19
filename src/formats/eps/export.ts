@@ -8,7 +8,15 @@ import { layoutText, primaryRun } from '../../core/text';
 import { type ExportContext, warner } from '../types';
 import type { EpsExportOptions } from '../registry';
 import { pagesForScope } from '../shared/pages';
-import { collectText, flattenPage, pathSegments, resolvedStops, type DrawOp } from '../shared/scene';
+import {
+  collectText,
+  deviceComponents,
+  deviceSpace,
+  flattenPage,
+  pathSegments,
+  resolvedStops,
+  type DrawOp,
+} from '../shared/scene';
 import { loadFonts } from '../shared/fonts';
 import { dataUrlToBytes, jpegComponents, readImageSize, sniffImageMime } from '../shared/bytes';
 import { decodePng } from '../shared/png';
@@ -65,7 +73,7 @@ class EpsWriter {
 
   shading(p: Extract<Paint, { stops: unknown }>): string {
     const stops = resolvedStops(p, this.doc);
-    const c = (s: (typeof stops)[number]) => `[${n(s.color.r)} ${n(s.color.g)} ${n(s.color.b)}]`;
+    const c = (s: (typeof stops)[number]) => `[${s.components.map(n).join(' ')}]`;
     const fn = (a: (typeof stops)[number], b: (typeof stops)[number]) =>
       `<< /FunctionType 2 /Domain [0 1] /C0 ${c(a)} /C1 ${c(b)} /N 1 >>`;
     let func: string;
@@ -88,12 +96,12 @@ class EpsWriter {
       p.type === 'radial'
         ? `[${n(fx)} ${n(fy)} 0 ${n(fx)} ${n(fy)} ${n(Math.hypot(tx - fx, ty - fy) || 1)}]`
         : `[${n(fx)} ${n(fy)} ${n(tx)} ${n(ty)}]`;
-    return `<< /ShadingType ${p.type === 'radial' ? 3 : 2} /ColorSpace /DeviceRGB /Coords ${coords} /Extend [true true] /Function ${func} >> shfill`;
+    return `<< /ShadingType ${p.type === 'radial' ? 3 : 2} /ColorSpace /${deviceSpace(this.doc)} /Coords ${coords} /Extend [true true] /Function ${func} >> shfill`;
   }
 
   color(p: Paint) {
-    const c = resolveColor(p.type === 'solid' ? p.color : p.stops[0].color, this.doc.swatches);
-    this.out.push(`${n(c.r)} ${n(c.g)} ${n(c.b)} setrgbcolor`);
+    const v = deviceComponents(p.type === 'solid' ? p.color : p.stops[0].color, this.doc);
+    this.out.push(`${v.map(n).join(' ')} ${v.length === 4 ? 'setcmykcolor' : 'setrgbcolor'}`);
   }
 
   checkAlpha(p: Paint, opacity: number, blend: string) {

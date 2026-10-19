@@ -33,7 +33,7 @@ my-design.curvs
 {
   "id": "doc_01J…",                       // ULID
   "units": "mm",                          // display unit; geometry is ALWAYS stored in points (1/72 in)
-  "colorProfile": "srgb",
+  "colorProfile": "srgb",                 // "srgb" (screen) or "cmyk" (print: colors are stored as CMYK inks, print exports write DeviceCMYK)
   "swatches": [ { "id": "sw_1", "name": "Deep teal", "color": { "space": "srgb", "r": 0.169, "g": 0.373, "b": 0.42, "a": 1 }, "global": true } ],
   "styles":   [ { "id": "st_1", "name": "Wave", "appearance": { /* Appearance */ } } ],
   "symbols":  [ { "id": "sy_1", "name": "Sun", "root": { /* Node */ } } ],

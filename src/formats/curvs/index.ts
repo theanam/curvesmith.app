@@ -295,7 +295,7 @@ export async function readCurvs(bytes: Uint8Array): Promise<CurvsDocument> {
   const doc: CurvsDocument = {
     id: typeof raw.id === 'string' ? raw.id : `doc_${Date.now()}`,
     units: (raw.units as CurvsDocument['units']) ?? 'px',
-    colorProfile: 'srgb',
+    colorProfile: raw.colorProfile === 'cmyk' ? 'cmyk' : 'srgb',
     swatches: (raw.swatches as CurvsDocument['swatches']) ?? [],
     styles: (raw.styles as CurvsDocument['styles']) ?? [],
     symbols,

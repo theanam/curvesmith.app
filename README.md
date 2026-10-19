@@ -40,6 +40,7 @@ No install, no account, and your files never leave your device.
 - **Appearance stacks**: any number of fills, strokes and effects per object, with linear, radial and conic gradients and blend modes.
 - **Strokes**: inside, center or outside alignment, dashes, arrowheads and variable width profiles.
 - **Effects**: drop shadow, inner shadow and blur.
+- **Print colors**: RGB or CMYK documents. CMYK keeps exact ink values (rich blacks included) and exports DeviceCMYK PDF, AI and EPS.
 - **Assets**: global colors that update every use, symbols with live instances, and saved styles.
 - **Fonts**: a searchable picker with previews of nearly 2,000 Google Fonts, sorted by category.
 

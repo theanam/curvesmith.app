@@ -30,6 +30,7 @@ import {
   pushGraphicsState,
   setCharacterSpacing,
   setDashPattern,
+  setFillingCmykColor,
   setFillingRgbColor,
   setFontAndSize,
   setGraphicsState,
@@ -62,6 +63,8 @@ import {
   flattenPage,
   pathSegments,
   resolvedStops,
+  deviceComponents,
+  deviceSpace,
   type DrawOp,
   type TextOp,
 } from '../shared/scene';
@@ -165,8 +168,8 @@ class PdfPageWriter {
       ctx.obj({
         FunctionType: 2,
         Domain: [0, 1],
-        C0: [a.color.r, a.color.g, a.color.b],
-        C1: [b.color.r, b.color.g, b.color.b],
+        C0: a.components,
+        C1: b.components,
         N: 1,
       });
     let func;
@@ -190,14 +193,14 @@ class PdfPageWriter {
       p.type === 'radial'
         ? ctx.obj({
             ShadingType: 3,
-            ColorSpace: 'DeviceRGB',
+            ColorSpace: deviceSpace(this.w.doc),
             Coords: [fx, fy, 0, fx, fy, Math.hypot(tx - fx, ty - fy) || 1],
             Function: func,
             Extend: [true, true],
           })
         : ctx.obj({
             ShadingType: 2,
-            ColorSpace: 'DeviceRGB',
+            ColorSpace: deviceSpace(this.w.doc),
             Coords: [fx, fy, tx, ty],
             Function: func,
             Extend: [true, true],
@@ -213,7 +216,17 @@ class PdfPageWriter {
   setPaint(p: Paint, m: Matrix, kind: 'fill' | 'stroke', opacity: number): number {
     if (p.type === 'solid') {
       const c = resolveColor(p.color, this.w.doc.swatches);
-      this.ops.push(kind === 'fill' ? setFillingRgbColor(c.r, c.g, c.b) : setStrokingRgbColor(c.r, c.g, c.b));
+      const v = deviceComponents(p.color, this.w.doc);
+      if (v.length === 4)
+        this.ops.push(
+          kind === 'fill'
+            ? setFillingCmykColor(v[0], v[1], v[2], v[3])
+            : setStrokingCmykColor(v[0], v[1], v[2], v[3]),
+        );
+      else
+        this.ops.push(
+          kind === 'fill' ? setFillingRgbColor(v[0], v[1], v[2]) : setStrokingRgbColor(v[0], v[1], v[2]),
+        );
       return c.a * opacity;
     }
     const name = this.gradientPattern(p, m);

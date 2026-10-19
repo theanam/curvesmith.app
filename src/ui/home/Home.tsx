@@ -23,7 +23,7 @@ import { formatShortcut, REPO_URL } from '../../state/commands';
 import { isDarkTheme } from '../../state/prefs';
 import { GitHubMark, Icon, Mark, type IconName } from '../icons';
 import { toPt } from '../../core/units';
-import type { Unit } from '../../core/types';
+import type { ColorMode, Unit } from '../../core/types';
 import { SAMPLES } from '../../samples';
 import { navigate } from '../router';
 import { Tip } from '../controls/Tooltip';
@@ -38,22 +38,25 @@ export type Preset = {
   unit: Unit;
   label: string;
   radius?: boolean;
+  /** Print sizes start in CMYK. */
+  color?: ColorMode;
 };
 
 export const PRESETS: Preset[] = [
-  { id: 'a4', name: 'A4', w: 210, h: 297, unit: 'mm', label: '210 × 297 mm' },
-  { id: 'letter', name: 'US Letter', w: 8.5, h: 11, unit: 'in', label: '8.5 × 11 in' },
+  { id: 'a4', name: 'A4', w: 210, h: 297, unit: 'mm', label: '210 × 297 mm · CMYK', color: 'cmyk' },
+  { id: 'letter', name: 'US Letter', w: 8.5, h: 11, unit: 'in', label: '8.5 × 11 in · CMYK', color: 'cmyk' },
   { id: 'social', name: 'Social square', w: 1080, h: 1080, unit: 'px', label: '1080 × 1080 px' },
   { id: 'icon', name: 'App icon', w: 1024, h: 1024, unit: 'px', label: '1024 × 1024 px', radius: true },
   { id: 'slides', name: 'Presentation', w: 1920, h: 1080, unit: 'px', label: '1920 × 1080 px' },
 ];
 
-export function createFromPreset(p: { name: string; w: number; h: number; unit: Unit }) {
+export function createFromPreset(p: { name: string; w: number; h: number; unit: Unit; color?: ColorMode }) {
   newDocument({
     name: p.name === 'Custom size' ? 'Untitled' : p.name,
     width: toPt(p.w, p.unit),
     height: toPt(p.h, p.unit),
     units: p.unit,
+    colorMode: p.color ?? (p.unit === 'mm' || p.unit === 'in' || p.unit === 'cm' ? 'cmyk' : 'srgb'),
   });
 }
 

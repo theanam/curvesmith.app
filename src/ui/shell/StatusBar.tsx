@@ -86,7 +86,7 @@ export function StatusBar() {
         {!dirty || od.autosavedAt ? <span className="ok-dot" /> : null}
         {saveText}
       </span>
-      <span className="hide-sm">RGB · sRGB</span>
+      <span className="hide-sm">{od.doc.colorProfile === 'cmyk' ? 'CMYK' : 'RGB · sRGB'}</span>
       <M.Root modal={false}>
         <M.Trigger asChild>
           <button aria-label="Zoom presets">{Math.round(zoom * 100)}%</button>

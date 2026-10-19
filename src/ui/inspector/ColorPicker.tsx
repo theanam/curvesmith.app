@@ -1,15 +1,17 @@
 import { clone } from '../../core/document';
 import * as P from '@radix-ui/react-popover';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { Color, SrgbColor, Swatch } from '../../core/types';
+import type { CmykColor, Color, SrgbColor, Swatch } from '../../core/types';
 import {
+  cmyk,
+  colorForMode,
   colorToHex,
   hexToColor,
   hsbToRgb,
   oklchToRgb,
+  resolveCmyk,
   resolveColor,
   rgb,
-  rgbToCmyk,
   rgbToHsb,
   rgbToOklch,
 } from '../../core/color';
@@ -95,9 +97,14 @@ export function ColorPicker({
   swatches?: Swatch[];
   allowNone?: boolean;
 }) {
+  const od = useActiveDoc();
+  const docMode = od?.doc.colorProfile ?? 'srgb';
+  // CMYK documents store ink values; every edit is converted on the way out.
+  const out = (c: Color | null) => onChange(c && colorForMode(c, docMode));
   const resolved: SrgbColor | null = value ? resolveColor(value, swatches) : null;
+  const ink: CmykColor = value ? resolveCmyk(value, swatches) : cmyk(0, 0, 0, 1);
   const [hsb, setHsb] = useState(() => (resolved ? rgbToHsb(resolved) : { h: 0, s: 0, b: 0 }));
-  const [mode, setMode] = useState<Mode>('hex');
+  const [mode, setMode] = useState<Mode>(docMode === 'cmyk' ? 'cmyk' : 'hex');
   const areaRef = useRef<HTMLDivElement>(null);
   const alpha = resolved?.a ?? 1;
   const linked = value && 'swatch' in value ? swatches.find((s) => s.id === value.swatch) : null;
@@ -113,7 +120,7 @@ export function ColorPicker({
 
   const emit = (h: number, s: number, b: number, a = alpha) => {
     setHsb({ h, s, b });
-    onChange(hsbToRgb(h, s, b, a));
+    out(hsbToRgb(h, s, b, a));
   };
 
   const setArea = (clientX: number, clientY: number) => {
@@ -130,7 +137,7 @@ export function ColorPicker({
     try {
       const r = await new ED().open();
       const c = hexToColor(r.sRGBHex);
-      if (c) onChange({ ...c, a: alpha });
+      if (c) out({ ...c, a: alpha });
     } catch {
       /* cancelled */
     }
@@ -170,24 +177,29 @@ export function ColorPicker({
       <Slider
         label="Opacity"
         value={alpha}
-        onChange={(v) => emit(hsb.h, hsb.s, hsb.b, v)}
+        onChange={(v) =>
+          value && 'space' in value && value.space === 'cmyk'
+            ? out({ ...ink, a: v })
+            : emit(hsb.h, hsb.s, hsb.b, v)
+        }
         background={`linear-gradient(to right, transparent, ${curHex}), repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 8px 8px`}
       />
-      <div className="row" style={{ gap: 6 }}>
-        <select
-          className="field"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as Mode)}
-          aria-label="Color model"
-          style={{ width: 74, fontSize: 12 }}
-        >
-          <option value="hex">HEX</option>
-          <option value="rgb">RGB</option>
-          <option value="hsb">HSB</option>
-          <option value="oklch">OKLCH</option>
-          <option value="cmyk">CMYK</option>
-        </select>
-        <Channels mode={mode} color={cur} hsb={hsb} onChange={(c) => onChange(c)} />
+      <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <label className="field" style={{ width: 84 }}>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as Mode)}
+            aria-label="Color model"
+            style={{ fontSize: 12 }}
+          >
+            <option value="hex">HEX</option>
+            <option value="rgb">RGB</option>
+            <option value="hsb">HSB</option>
+            <option value="oklch">OKLCH</option>
+            <option value="cmyk">CMYK</option>
+          </select>
+        </label>
+        <Channels mode={mode} color={cur} ink={ink} hsb={hsb} onChange={out} />
         <Tip label="Pick from screen">
           <button
             className="icon-btn sm"
@@ -205,7 +217,7 @@ export function ColorPicker({
           <button
             className="small-btn"
             style={{ marginLeft: 'auto', height: 24 }}
-            onClick={() => onChange(clone(linked.color))}
+            onClick={() => out(clone(linked.color))}
           >
             <Icon name="unlink" size={13} /> Unlink
           </button>
@@ -234,7 +246,7 @@ export function ColorPicker({
         {allowNone && (
           <button
             aria-label="No color"
-            onClick={() => onChange(null)}
+            onClick={() => out(null)}
             style={{
               background:
                 'linear-gradient(to top right, #fff calc(50% - 1px), #e5484d calc(50% - 1px), #e5484d calc(50% + 1px), #fff calc(50% + 1px))',
@@ -246,7 +258,7 @@ export function ColorPicker({
             key={h}
             aria-label={h}
             style={{ background: h }}
-            onClick={() => onChange({ ...hexToColor(h)!, a: alpha })}
+            onClick={() => out({ ...hexToColor(h)!, a: alpha })}
           />
         ))}
       </div>
@@ -257,13 +269,16 @@ export function ColorPicker({
 function Channels({
   mode,
   color,
+  ink,
   hsb,
   onChange,
 }: {
   mode: Mode;
   color: SrgbColor;
+  /** Ink values, exact for CMYK colors. */
+  ink: CmykColor;
   hsb: { h: number; s: number; b: number };
-  onChange(c: SrgbColor): void;
+  onChange(c: Color): void;
 }) {
   const [hexText, setHexText] = useState(colorToHex(color));
   useEffect(() => setHexText(colorToHex(color)), [color]);
@@ -284,7 +299,7 @@ function Channels({
         />
       </label>
     );
-  const fields: { label: string; value: number; max: number; set(v: number): SrgbColor }[] = [];
+  const fields: { label: string; value: number; max: number; set(v: number): Color }[] = [];
   if (mode === 'rgb')
     (['r', 'g', 'b'] as const).forEach((k) =>
       fields.push({
@@ -336,38 +351,25 @@ function Channels({
     });
   }
   if (mode === 'cmyk') {
-    const c = rgbToCmyk(color);
-    const from = (cc: number, m: number, y: number, k: number) =>
-      rgb((1 - cc) * (1 - k), (1 - m) * (1 - k), (1 - y) * (1 - k), color.a);
-    fields.push({
-      label: 'C',
-      value: Math.round(c.c * 100),
-      max: 100,
-      set: (v) => from(v / 100, c.m, c.y, c.k),
-    });
-    fields.push({
-      label: 'M',
-      value: Math.round(c.m * 100),
-      max: 100,
-      set: (v) => from(c.c, v / 100, c.y, c.k),
-    });
-    fields.push({
-      label: 'Y',
-      value: Math.round(c.y * 100),
-      max: 100,
-      set: (v) => from(c.c, c.m, v / 100, c.k),
-    });
-    fields.push({
-      label: 'K',
-      value: Math.round(c.k * 100),
-      max: 100,
-      set: (v) => from(c.c, c.m, c.y, v / 100),
-    });
+    const c = ink;
+    (['c', 'm', 'y', 'k'] as const).forEach((key) =>
+      fields.push({
+        label: key.toUpperCase(),
+        value: Math.round(c[key] * 100),
+        max: 100,
+        set: (v) => ({ ...c, [key]: v / 100 }),
+      }),
+    );
   }
+  const wide = fields.length > 3;
   return (
-    <div className="row" style={{ gap: 4, flex: 1, minWidth: 0 }}>
+    <div
+      className={`row cp-channels ${wide ? 'wide' : ''}`}
+      style={{ gap: 4, minWidth: 0, ...(wide ? null : { flex: 1 }) }}
+    >
       {fields.map((f) => (
         <label key={f.label} className="field" style={{ flex: 1, padding: '0 4px', gap: 2 }} title={f.label}>
+          {wide && <span className="label">{f.label}</span>}
           <input
             aria-label={f.label}
             defaultValue={f.value}

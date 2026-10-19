@@ -5,7 +5,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFName, PDFRawStream, PDFRef, decodePD
 import { exportPdfBytes, BLEED_PT } from '../../../src/formats/pdf/export';
 import { aiAdapter, pdfAdapter } from '../../../src/formats/pdf';
 import { createDocument, makeRect, makeText, makeArtboard } from '../../../src/core/document';
-import { rgb } from '../../../src/core/color';
+import { cmyk, convertDocumentColors, rgb } from '../../../src/core/color';
 import { fromUtf8 } from '../../../src/formats/shared/bytes';
 import { ctxFor, sampleDoc } from './helpers';
 
@@ -166,5 +166,38 @@ describe('PDF export', () => {
     expect(aiAdapter.extensions).toEqual(['ai']);
     const pdfBlob = await pdfAdapter.export!(doc, { kind: 'all' }, pdfAdapter.defaults!, ctxFor(doc));
     expect(pdfBlob.type).toBe('application/pdf');
+  });
+
+  it('writes CMYK inks for CMYK documents, keeping exact values', async () => {
+    const doc = sampleDoc();
+    convertDocumentColors(doc, 'cmyk');
+    const rect = makeRect(10, 10, 50, 50);
+    rect.appearance.items = [
+      {
+        kind: 'fill',
+        id: 'f',
+        visible: true,
+        paint: { type: 'solid', color: cmyk(0.6, 0.4, 0.4, 1) },
+        opacity: 1,
+        blend: 'normal',
+      },
+    ];
+    doc.artboards[0].children.push(rect);
+    const { text, pdf } = await content(await exportPdfBytes(doc, { kind: 'all' }, {}, ctxFor(doc)));
+    expect(text).toContain('0.6 0.4 0.4 1 k');
+    expect(text).not.toMatch(/ rg$/m);
+    const shadings = [...pdf.context.enumerateIndirectObjects()]
+      .map(([, o]) => o)
+      .filter((o): o is PDFDict => o instanceof PDFDict && !!o.get(PDFName.of('PatternType')))
+      .map((o) => o.lookup(PDFName.of('Shading'), PDFDict));
+    expect(shadings.length).toBeGreaterThan(0);
+    for (const sh of shadings)
+      expect(String((sh as PDFDict).get(PDFName.of('ColorSpace')))).toBe('/DeviceCMYK');
+  });
+
+  it('keeps RGB for RGB documents', async () => {
+    const doc = sampleDoc();
+    const { text } = await content(await exportPdfBytes(doc, { kind: 'all' }, {}, ctxFor(doc)));
+    expect(text).toMatch(/ rg$/m);
   });
 });

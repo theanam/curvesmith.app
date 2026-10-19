@@ -3,7 +3,8 @@ import { closeDialog, useEditor } from '../../state/store';
 import { Dialog } from '../controls/Dialog';
 import { createFromPreset, PRESETS, userPresets, type Preset } from '../home/Home';
 import { UNITS, toPt, fromPt } from '../../core/units';
-import type { Unit } from '../../core/types';
+import type { ColorMode, Unit } from '../../core/types';
+import { Segmented } from '../controls/Segmented';
 import { lsSet } from '../../state/storage';
 import { Icon } from '../icons';
 import { Tip } from '../controls/Tooltip';
@@ -12,6 +13,7 @@ export function NewDocumentDialog() {
   const open = useEditor((s) => s.dialog === 'customSize');
   const [name, setName] = useState('Untitled');
   const [unit, setUnit] = useState<Unit>('mm');
+  const [color, setColor] = useState<ColorMode>('cmyk');
   const [w, setW] = useState('210');
   const [h, setH] = useState('297');
   const [mine, setMine] = useState<Preset[]>(userPresets);
@@ -28,10 +30,11 @@ export function NewDocumentDialog() {
     setW(String(p.w));
     setH(String(p.h));
     setName(p.name);
+    setColor(p.color ?? (['mm', 'cm', 'in'].includes(p.unit) ? 'cmyk' : 'srgb'));
   };
   const create = () => {
     if (!valid) return;
-    createFromPreset({ name: name.trim() || 'Untitled', w: W, h: H, unit });
+    createFromPreset({ name: name.trim() || 'Untitled', w: W, h: H, unit, color });
     closeDialog();
   };
   const savePreset = () => {
@@ -42,6 +45,7 @@ export function NewDocumentDialog() {
       h: H,
       unit,
       label: `${W} × ${H} ${unit}`,
+      color,
     };
     const next = [...mine, p];
     setMine(next);
@@ -133,6 +137,15 @@ export function NewDocumentDialog() {
             </select>
           </label>
         </div>
+        <Segmented<ColorMode>
+          label="Color mode"
+          value={color}
+          onChange={setColor}
+          options={[
+            { value: 'srgb', label: 'RGB · screen' },
+            { value: 'cmyk', label: 'CMYK · print' },
+          ]}
+        />
         <button type="submit" hidden />
       </form>
     </Dialog>

@@ -371,6 +371,7 @@ const SLIDES: Slide[] = [
     title: 'SVG, PDF, AI, EPS, DXF, EMF, PNG, JPG, WebP',
     points: [
       <>Live preview, presets per format, and Export again in one keystroke.</>,
+      <>CMYK documents keep exact ink values and export print-ready PDF, AI and EPS.</>,
       <>Print sends true vector pages to the printer.</>,
       <>Opens SVG, PDF, AI, DXF and images too, with an honest import report.</>,
     ],

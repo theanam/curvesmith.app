@@ -1,4 +1,4 @@
-import type { Color, CurvsDocument, Paint, SrgbColor, Swatch } from './types';
+import type { CmykColor, Color, ColorMode, CurvsDocument, Paint, SrgbColor, Swatch } from './types';
 
 export const rgb = (r: number, g: number, b: number, a = 1): SrgbColor => ({ space: 'srgb', r, g, b, a });
 
@@ -85,6 +85,74 @@ export function rgbToCmyk(c: SrgbColor) {
   if (k >= 1) return { c: 0, m: 0, y: 0, k: 1 };
   return { c: (1 - c.r - k) / (1 - k), m: (1 - c.g - k) / (1 - k), y: (1 - c.b - k) / (1 - k), k };
 }
+
+export const cmyk = (c: number, m: number, y: number, k: number, a = 1): CmykColor => ({
+  space: 'cmyk',
+  c,
+  m,
+  y,
+  k,
+  a,
+});
+
+/** Ink values for any color: CMYK colors keep theirs, others convert from their sRGB value. */
+export function resolveCmyk(c: Color, swatches: Swatch[] | CurvsDocument['swatches'] = []): CmykColor {
+  if ('swatch' in c) {
+    const s = swatches.find((x) => x.id === c.swatch);
+    return s ? resolveCmyk(s.color, []) : cmyk(0, 0, 0, 1);
+  }
+  if (c.space === 'cmyk') return c;
+  const s = resolveColor(c, swatches);
+  const v = rgbToCmyk(s);
+  return cmyk(v.c, v.m, v.y, v.k, s.a);
+}
+
+/** A color stored the way a document of `mode` keeps it. Swatch links and spot colors stay as they are. */
+export function colorForMode<T extends Color>(c: T, mode: ColorMode): Color {
+  if ('swatch' in c || c.space === 'spot') return c;
+  if (mode === 'cmyk') return c.space === 'cmyk' ? c : resolveCmyk(c);
+  return c.space === 'srgb' ? c : resolveColor(c);
+}
+
+/** How a color reads in the inspector: ink percentages in CMYK documents, hex otherwise. */
+export function colorLabel(c: Color, doc: Pick<CurvsDocument, 'colorProfile' | 'swatches'>): string {
+  if (doc.colorProfile !== 'cmyk') return colorToHex(resolveColor(c, doc.swatches));
+  const k = resolveCmyk(c, doc.swatches);
+  const pc = (v: number) => Math.round(v * 100);
+  return `C${pc(k.c)} M${pc(k.m)} Y${pc(k.y)} K${pc(k.k)}`;
+}
+
+const COLOR_SPACES = new Set(['srgb', 'display-p3', 'cmyk']);
+
+/** Convert every color in a document (objects, swatches, styles, symbols, backgrounds) in place. */
+export function convertDocumentColors(doc: CurvsDocument, mode: ColorMode) {
+  const walk = (v: unknown): void => {
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i++) {
+        const x = v[i];
+        if (isPlainColor(x)) v[i] = colorForMode(x, mode);
+        else walk(x);
+      }
+      return;
+    }
+    const o = v as Record<string, unknown>;
+    for (const k of Object.keys(o)) {
+      if (k === 'assets') continue;
+      const x = o[k];
+      if (isPlainColor(x)) o[k] = colorForMode(x, mode);
+      else walk(x);
+    }
+  };
+  walk(doc.artboards);
+  walk(doc.swatches);
+  walk(doc.styles);
+  walk(doc.symbols);
+  doc.colorProfile = mode;
+}
+
+const isPlainColor = (x: unknown): x is Color =>
+  !!x && typeof x === 'object' && COLOR_SPACES.has((x as { space?: string }).space ?? '');
 
 // ---- OKLCH ----
 const toLinear = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
