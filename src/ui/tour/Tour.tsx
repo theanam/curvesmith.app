@@ -385,6 +385,7 @@ const SLIDES: Slide[] = [
       <>Saves straight to your files where the browser allows; downloads elsewhere.</>,
       <>Autosave keeps a copy with full undo history under Files on this device.</>,
       <>Install it as an app and open .curvs and .svg files from your desktop.</>,
+      <>Works on tablets: pinch to zoom, two fingers to pan, and on-screen ⇧ ⌥ ⌘ keys.</>,
     ],
     visual: <PrivacyArt />,
   },

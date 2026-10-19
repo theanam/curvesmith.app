@@ -314,6 +314,14 @@ export const builderTool: Tool = {
     altHeld = e.alt;
     picked = new Set();
     pickedEdges = [];
+    if (!regions(api)) {
+      // No hover on touch screens: pick up the shapes under the finger when it lands.
+      const next = overlappingCluster(api.doc, e.world, api.px(3), api.od.isolation);
+      if (next.length) {
+        autoIds = next;
+        cache = null;
+      }
+    }
     const edge = e.alt ? edgeAt(api, e.world) : null;
     if (edge) {
       mode = 'edges';

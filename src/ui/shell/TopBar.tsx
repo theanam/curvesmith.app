@@ -17,6 +17,7 @@ import {
   setState,
   setUi,
   undo,
+  redo,
   useEditor,
 } from '../../state/store';
 import { Icon, Mark } from '../icons';
@@ -171,6 +172,7 @@ function HistoryButton() {
 export function TopBar() {
   const theme = useEditor((s) => s.theme);
   const canUndo = useEditor((s) => !!s.docs.find((d) => d.key === s.activeKey)?.history.past.length);
+  const canRedo = useEditor((s) => !!s.docs.find((d) => d.key === s.activeKey)?.history.future.length);
   const hasDoc = useEditor((s) => !!s.activeKey);
   const themeLabel =
     theme === 'light'
@@ -208,6 +210,11 @@ export function TopBar() {
       <Tip label="Undo" shortcut="Mod+Z">
         <button className="icon-btn hide-sm" aria-label="Undo" disabled={!canUndo} onClick={undo}>
           <Icon name="undo" size={17} stroke={1.7} />
+        </button>
+      </Tip>
+      <Tip label="Redo" shortcut="Mod+Shift+Z">
+        <button className="icon-btn hide-sm" aria-label="Redo" disabled={!canRedo} onClick={redo}>
+          <Icon name="redo" size={17} stroke={1.7} />
         </button>
       </Tip>
       <span className="hide-sm">

@@ -411,6 +411,12 @@ export const penTool: Tool = {
     }
   },
 
+  abortPress() {
+    // Pinching mid-path keeps the path going; only the press that turned into a pinch is undone.
+    if (dragging) cancelGesture();
+    dragging = null;
+  },
+
   cancel(api) {
     if (dragging) cancelGesture();
     dragging = null;

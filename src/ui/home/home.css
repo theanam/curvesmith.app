@@ -435,3 +435,17 @@
     align-items: flex-start;
   }
 }
+
+.home-head h1 {
+  white-space: nowrap;
+}
+
+/* Narrow screens (tablets in portrait): the search goes under the title. */
+@media (max-width: 900px) {
+  .home-head {
+    flex-wrap: wrap;
+  }
+  .home-head .home-search {
+    flex: 1 1 100%;
+  }
+}

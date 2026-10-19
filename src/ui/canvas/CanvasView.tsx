@@ -10,7 +10,11 @@ import {
   type ViewState,
   mutate,
   setIsolation,
+  gestureActive,
+  cancelGesture,
 } from '../../state/store';
+import { getInput, markTouch, setPointerType } from '../../state/input';
+import { TouchBar } from './TouchBar';
 import { TOOL_IMPLS } from '../../tools';
 import type { Overlay, ToolApi, ToolPointer } from '../../tools/types';
 import { createToolApi, sharedOverlay } from '../../tools/api';
@@ -56,6 +60,13 @@ export function CanvasView() {
   const pointer = useRef<ToolPointer | null>(null);
   const frame = useRef(0);
   const panning = useRef<{ x: number; y: number; view: ViewState } | null>(null);
+  // Touch: fingers on the canvas, a two-finger pinch in progress, and the last tap (for double-tap).
+  const touches = useRef(new Map<number, Vec>());
+  const pinch = useRef<{ dist: number; mid: Vec; view: ViewState } | null>(null);
+  /** Fingers left over from a pinch do nothing until they lift. */
+  const ignored = useRef(new Set<number>());
+  const lastTap = useRef<{ t: number; at: Vec } | null>(null);
+  const syntheticDbl = useRef(0);
   const [cursor, setCursor] = useState<string>('default');
 
   const activeTool = springTool ?? tool;
@@ -245,12 +256,13 @@ export function CanvasView() {
     const screen: Vec = [e.clientX - r.left, e.clientY - r.top];
     const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
     const world = toWorld(view, screen);
+    const pad = getInput();
     return {
       world,
       screen,
-      shift: e.shiftKey,
-      alt: e.altKey,
-      mod: mac ? e.metaKey : e.ctrlKey,
+      shift: e.shiftKey || pad.shift,
+      alt: e.altKey || pad.alt,
+      mod: (mac ? e.metaKey : e.ctrlKey) || pad.mod,
       button: e.button,
       pressure: e.pressure || 0.5,
       dragging: prev?.dragging ?? false,
@@ -261,7 +273,49 @@ export function CanvasView() {
     };
   };
 
+  /** Drop whatever the tool was doing (a second finger landed, or the system took the touch). */
+  const abandon = () => {
+    const api = makeApi();
+    const tool = TOOL_IMPLS[activeTool];
+    if (pointer.current && api) (tool.abortPress ?? tool.cancel)?.call(tool, api);
+    if (gestureActive()) cancelGesture();
+    pointer.current = null;
+    overlay.guides = [];
+    overlay.hud = null;
+    overlay.marquee = null;
+    schedule();
+  };
+
+  const local = (e: React.PointerEvent): Vec => {
+    const r = hostRef.current!.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+
+  const startPinch = () => {
+    const [a, b] = [...touches.current.values()];
+    const view = makeApi()?.view;
+    if (!view) return;
+    pinch.current = {
+      dist: Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1])),
+      mid: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+      view,
+    };
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
+    setPointerType(e.pointerType);
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') markTouch();
+    if (e.pointerType === 'touch') {
+      touches.current.set(e.pointerId, local(e));
+      if (touches.current.size >= 2) {
+        // Two fingers navigate: pinch to zoom, drag to pan.
+        abandon();
+        for (const id of touches.current.keys()) ignored.current.add(id);
+        if (touches.current.size === 2) startPinch();
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+        return;
+      }
+    }
     const api = makeApi();
     if (!api || getState().editingText) {
       if (getState().editingText) setState({ editingText: null });
@@ -294,6 +348,19 @@ export function CanvasView() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch' && touches.current.has(e.pointerId)) {
+      touches.current.set(e.pointerId, local(e));
+      if (pinch.current && touches.current.size === 2) {
+        const [a, b] = [...touches.current.values()];
+        const pn = pinch.current;
+        const dist = Math.max(1, Math.hypot(a[0] - b[0], a[1] - b[1]));
+        const mid: Vec = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        const z = zoomAt(pn.view, clampZoom((pn.view.zoom * dist) / pn.dist), pn.mid);
+        setView({ ...z, panX: z.panX + mid[0] - pn.mid[0], panY: z.panY + mid[1] - pn.mid[1] });
+        return;
+      }
+      if (ignored.current.has(e.pointerId)) return;
+    }
     const api = makeApi();
     if (!api) return;
     if (panning.current) {
@@ -322,7 +389,22 @@ export function CanvasView() {
     if (c !== cursor) setCursor(c);
   };
 
+  const releaseTouch = (e: React.PointerEvent): boolean => {
+    if (e.pointerType !== 'touch') return false;
+    touches.current.delete(e.pointerId);
+    if (touches.current.size < 2) pinch.current = null;
+    if (ignored.current.delete(e.pointerId)) return true;
+    return false;
+  };
+
+  const onPointerCancel = (e: React.PointerEvent) => {
+    releaseTouch(e);
+    panning.current = null;
+    abandon();
+  };
+
   const onPointerUp = (e: React.PointerEvent) => {
+    if (releaseTouch(e)) return;
     if (panning.current) {
       panning.current = null;
       setCursor(overlay.cursor ?? t0cursor(activeTool));
@@ -339,10 +421,23 @@ export function CanvasView() {
     } catch (err) {
       console.error(err);
     }
+    // Double-tap with a finger or pen stands in for double-click.
+    if (e.pointerType !== 'mouse' && !p.moved) {
+      const now = performance.now();
+      const t = lastTap.current;
+      if (t && now - t.t < 350 && Math.hypot(t.at[0] - p.screen[0], t.at[1] - p.screen[1]) < 24) {
+        lastTap.current = null;
+        syntheticDbl.current = now;
+        const next = makeApi();
+        if (next) TOOL_IMPLS[activeTool].dblclick?.(toPointer(e, null, next.view), next);
+      } else lastTap.current = { t: now, at: p.screen };
+    }
     schedule();
   };
 
   const onDoubleClick = (e: React.MouseEvent) => {
+    // Already handled as a double-tap.
+    if (performance.now() - syntheticDbl.current < 600) return;
     const api = makeApi();
     if (!api) return;
     const p = toPointer(e as unknown as PointerEvent, null, api.view);
@@ -389,6 +484,8 @@ export function CanvasView() {
     };
     const onGestureChange = (e: Event) => {
       e.preventDefault();
+      // iOS also reports a two-finger pinch as pointers; that path already zooms.
+      if (touches.current.size >= 2) return;
       const d = getState().docs.find((x) => x.key === getState().activeKey);
       const ge = e as Event & { scale: number; clientX: number; clientY: number };
       if (!d?.view) return;
@@ -444,7 +541,7 @@ export function CanvasView() {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onPointerLeave={onPointerLeave}
         onDoubleClick={onDoubleClick}
         onContextMenu={(e) => e.preventDefault()}
@@ -481,6 +578,7 @@ export function CanvasView() {
         )}
         {editingText && view && <TextEditor od={od} id={editingText} view={view} />}
       </div>
+      <TouchBar />
     </div>
   );
 }

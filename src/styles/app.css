@@ -1701,7 +1701,7 @@ svg.icon {
   align-self: stretch;
   justify-content: center;
   gap: 1px;
-  width: 16px;
+  width: 14px;
   flex-shrink: 0;
   padding: 3px 0;
 }
@@ -1825,4 +1825,156 @@ svg.icon {
 
 .wh-link.on {
   color: var(--accent);
+}
+
+/* ---- Touch ---------------------------------------------------------------------------------- */
+
+html {
+  /* No double-tap zoom on the app chrome; pinch zoom on the canvas is handled by the app. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Long-presses on chrome must not select text or pop up callouts; fields stay selectable. */
+.editor,
+.home {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.editor input,
+.editor textarea,
+.editor [contenteditable],
+.home input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* On-screen ⇧ ⌥ ⌘, Delete and Done for touch screens, floating over the bottom of the canvas. */
+/* Bottom-left of the canvas: under the left thumb, and clear of the inspector drawer on the right. */
+.touch-bar {
+  position: absolute;
+  left: calc(var(--ruler) + 12px);
+  bottom: 14px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-pop);
+}
+
+.touch-key {
+  min-width: 44px;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fg);
+  font-size: 17px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-key:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.touch-key[aria-pressed='true'] {
+  background: var(--cs-volt);
+  color: var(--cs-on-volt);
+}
+
+.touch-sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--line);
+}
+
+/* No hover on touch screens: controls that appear on hover are always shown. */
+@media (hover: none) {
+  .doc-tab .close,
+  .ap-row .row-actions,
+  .layer-row .toggle,
+  .file-card .file-remove {
+    opacity: 1;
+    visibility: visible;
+  }
+  .search-btn kbd {
+    display: none;
+  }
+}
+
+/* Fingers need bigger targets: small buttons get a larger invisible hit area, steppers get wider. */
+@media (pointer: coarse) {
+  .icon-btn.sm,
+  .doc-tab .close,
+  .field-drop {
+    position: relative;
+  }
+  .icon-btn.sm::after,
+  .doc-tab .close::after,
+  .field-drop::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+  }
+  /* Steppers keep their width (values need the room) and reach right into the gap beside the field. */
+  .field-steps button {
+    position: relative;
+  }
+  .field-steps button::after {
+    content: '';
+    position: absolute;
+    inset: 0 -8px 0 0;
+  }
+}
+
+/* Tablets in portrait: the search shrinks to its icon and tabs keep their names. */
+@media (max-width: 1000px) {
+  .search-btn {
+    width: 36px;
+    min-width: 36px;
+    justify-content: center;
+    padding: 0;
+  }
+  .search-btn span,
+  .search-btn kbd {
+    display: none;
+  }
+  .doc-tab {
+    min-width: 72px;
+  }
+}
+
+/* The extension goes before the name gets cut. */
+@media (max-width: 1180px) {
+  .doc-tab .ext {
+    display: none;
+  }
+}
+
+.doc-tab .ext,
+.doc-tab .dot,
+.doc-tab .close {
+  flex-shrink: 0;
+}
+
+/* Steppers and preset arrows sit close to the value and the field edge, leaving the value more room. */
+.field.has-steps,
+.field.has-options {
+  padding-right: 3px;
+}
+
+.field.has-steps .field-steps,
+.field.has-options .field-drop {
+  margin-left: -4px;
 }

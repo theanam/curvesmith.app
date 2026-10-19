@@ -1,3 +1,4 @@
+import { markTouch } from '../state/input';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import {
@@ -50,6 +51,23 @@ function useWide(min: number) {
     return () => window.removeEventListener('resize', on);
   }, [min]);
   return wide;
+}
+
+/** Touch screens: show the touch keys once a finger or pen is used, and keep page zoom off the app chrome. */
+function useTouch() {
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') markTouch();
+    };
+    // iOS Safari pinch-zooms the whole page unless its gesture events are cancelled.
+    const gesture = (e: Event) => e.preventDefault();
+    window.addEventListener('pointerdown', down, true);
+    document.addEventListener('gesturestart', gesture);
+    return () => {
+      window.removeEventListener('pointerdown', down, true);
+      document.removeEventListener('gesturestart', gesture);
+    };
+  }, []);
 }
 
 /** Keyboard routing: text fields first, then the active tool, then app shortcuts, then single-key tools. */
@@ -249,6 +267,7 @@ export function App() {
   const dialog = useEditor((s) => s.dialog);
   const theme = useEditor((s) => s.theme);
   useKeyboard();
+  useTouch();
   useGlobalDrop();
   const view =
     route === 'editor' && hasDoc

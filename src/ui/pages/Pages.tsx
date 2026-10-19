@@ -161,6 +161,20 @@ export function HelpPage() {
       ),
     },
     {
+      icon: 'pin',
+      title: 'Tablets and pens',
+      body: (
+        <ul>
+          <li>One finger or a pen uses the current tool. Two fingers pan; pinch to zoom.</li>
+          <li>Double-tap where you would double-click.</li>
+          <li>
+            The touch keys at the bottom left stand in for ⇧, ⌥ and ⌘: tap one to keep it on, tap again to
+            release it. Done works like Esc.
+          </li>
+        </ul>
+      ),
+    },
+    {
       icon: 'shield',
       title: 'Your files',
       body: (

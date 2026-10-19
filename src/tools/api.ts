@@ -1,4 +1,5 @@
 /* Builds the ToolApi from editor state. Shared by the canvas and the tool tests. */
+import { toleranceScale } from '../state/input';
 import type { CurvsDocument } from '../core/types';
 import { getState, type OpenDoc } from '../state/store';
 import type { Overlay, PixelSample, ToolApi } from './types';
@@ -122,7 +123,7 @@ export function createToolApi(
     view,
     toScreen: (p) => toScreen(view, p),
     toWorld: (p) => toWorld(view, p),
-    px: (n) => n / view.zoom,
+    px: (n) => (n * toleranceScale()) / view.zoom,
     overlay,
     render,
     snapCandidates: (exclude, includeNodes) => snapCandidates(d, exclude, !!includeNodes),

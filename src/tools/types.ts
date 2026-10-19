@@ -69,6 +69,8 @@ export interface Tool {
   move?(e: ToolPointer, api: ToolApi): void;
   up?(e: ToolPointer, api: ToolApi): void;
   dblclick?(e: ToolPointer, api: ToolApi): void;
+  /** A second finger landed mid-press: undo just this press and keep any work in progress. Falls back to cancel. */
+  abortPress?(api: ToolApi): void;
   /** Return true when the key was handled. */
   key?(e: KeyboardEvent, api: ToolApi): boolean;
   keyUp?(e: KeyboardEvent, api: ToolApi): boolean;

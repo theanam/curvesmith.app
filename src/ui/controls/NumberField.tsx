@@ -69,7 +69,9 @@ const Chevron = ({ up }: { up?: boolean }) => (
 export function NumberField(p: Props) {
   const { value, unit = '', decimals = 2, step = 1 } = p;
   const suffixText = unit ? (unit === '%' || unit === '°' ? unit : ` ${unit}`) : '';
-  const shown = value === null ? '' : `${formatNumber(value, decimals)}${suffixText}`;
+  // When the value with its unit does not fit, the unit is left off so the number is never cut.
+  const [compact, setCompact] = useState(false);
+  const shown = value === null ? '' : `${formatNumber(value, decimals)}${compact ? '' : suffixText}`;
   const [text, setText] = useState(shown);
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,6 +88,29 @@ export function NumberField(p: Props) {
 
   const bounded = Number.isFinite(p.min) && Number.isFinite(p.max);
   const options = p.options ?? (bounded ? rangeOptions(p.min!, p.max!, step >= 1 ? step : 1) : null);
+
+  // Re-check the fit when the field changes size (inspector drawer, window resize).
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el || focused || !suffixText || value === null) return;
+    const full = `${formatNumber(value, decimals)}${suffixText}`;
+    if (!compact && el.value === full && el.scrollWidth > el.clientWidth + 1) setCompact(true);
+    else if (compact) {
+      // Try the unit again when the number gets shorter or the field wider.
+      el.value = full;
+      if (el.scrollWidth <= el.clientWidth + 1) setCompact(false);
+      el.value = shown;
+    }
+  }, [focused, suffixText, value, decimals, compact, shown, width]);
 
   // Select the whole entry once when focus arrives, before any typing.
   useLayoutEffect(() => {

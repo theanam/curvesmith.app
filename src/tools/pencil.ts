@@ -50,7 +50,8 @@ export const pencilTool: Tool = {
     const closeIt =
       Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) <= api.px(8) &&
       pts.length > 8;
-    const error = api.px(1 + smoothing * 6);
+    // A fitting tolerance in screen pixels; it does not grow for touch like hit areas do.
+    const error = (1 + smoothing * 6) / api.view.zoom;
     const smoothed = smoothPoints(pts, smoothing);
     const cont = continueFrom;
     continueFrom = null;
