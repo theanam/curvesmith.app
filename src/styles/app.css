@@ -1804,3 +1804,25 @@ svg.icon {
 .field:has(> select):hover::after {
   background: var(--fg);
 }
+
+/* Transform rows share one grid: two fields, then a related control (reference point, proportion lock). */
+.wh-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 8px;
+}
+
+.wh-span {
+  grid-column: 2 / 4;
+}
+
+.wh-link {
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+}
+
+.wh-link.on {
+  color: var(--accent);
+}

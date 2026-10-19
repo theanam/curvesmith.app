@@ -120,7 +120,10 @@ export function HelpPage() {
             want a plain path.
           </li>
           <li>Divide splits overlaps into separate pieces.</li>
-          <li>The Shape builder (⇧M) merges regions you drag across. ⌥-drag erases them.</li>
+          <li>
+            The Shape builder (⇧M) merges regions you drag across, even between groups. ⌥-drag erases regions;
+            ⌥-drag along the line between two regions removes just that line.
+          </li>
           <li>
             The Shapes tool (*) draws 28 editable shapes. Click it again to pick one; edit its settings in the
             inspector.

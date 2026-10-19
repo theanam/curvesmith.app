@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { builderTool, overlappingCluster } from '../../src/tools/builder';
+import { builderTool, edgeAt, overlappingCluster } from '../../src/tools/builder';
+import { selectionBounds } from '../../src/core/transform';
 import { makeEllipse, makeRect } from '../../src/core/document';
 import { mutate, select } from '../../src/state/store';
 import { api, children, doc, freshDoc } from './helpers';
@@ -88,5 +89,77 @@ describe('Shape builder', () => {
     select([a.id, b.id]);
     hoverDrag([25, 50], [140, 50]);
     expect(children().filter((n) => n.type === 'path')).toHaveLength(1);
+  });
+
+  it('builds shapes from different groups together', async () => {
+    const { a, b, far } = overlapping();
+    const { groupSelection } = await import('../../src/state/actions');
+    select([a.id, far.id]);
+    groupSelection();
+    select([]);
+    expect(overlappingCluster(doc(), [120, 50], 1, null).sort()).toEqual([a.id, b.id].sort());
+    hoverDrag([25, 50], [140, 50]);
+    // The merged shape lands where the front-most source was (inside the group); b is gone from the top level.
+    expect(children().some((n) => n.id === b.id)).toBe(false);
+    const g = children().find((n) => n.type === 'group');
+    const kids = g && g.type === 'group' ? g.children : [];
+    expect(kids.map((c) => c.type).sort()).toEqual(['ellipse', 'path']);
+    const merged = kids.find((c) => c.type === 'path')!;
+    expect(selectionBounds(doc(), [merged.id])).toMatchObject({ x: 0, width: 150 });
+  });
+
+  it('finds the line between two regions, never an outer outline', () => {
+    overlapping();
+    builderTool.move!(p([25, 50], false), api());
+    expect(edgeAt(api(), [50, 50])).not.toBeNull();
+    expect(edgeAt(api(), [100, 50])).not.toBeNull();
+    expect(edgeAt(api(), [0, 50])).toBeNull();
+    expect(edgeAt(api(), [25, 50])).toBeNull();
+  });
+
+  it('⌥-drag along a line removes it, joining the regions on both sides', () => {
+    overlapping();
+    hoverDrag([50, 40], [50, 60], true);
+    const paths = children().filter((n) => n.type === 'path');
+    expect(paths).toHaveLength(2);
+    const widths = paths.map((n) => Math.round(selectionBounds(doc(), [n.id])!.width)).sort((x, y) => x - y);
+    expect(widths).toEqual([50, 100]);
+  });
+
+  it('⌥-dragging across both lines leaves one shape', () => {
+    overlapping();
+    builderTool.move!(p([50, 50], false), api());
+    builderTool.down!(p([50, 50], true, [50, 50], true), api());
+    builderTool.move!(p([75, 50], true, [50, 50], true), api());
+    builderTool.move!(p([100, 50], true, [50, 50], true), api());
+    builderTool.up!(p([100, 50], false, [50, 50], true), api());
+    const paths = children().filter((n) => n.type === 'path');
+    expect(paths).toHaveLength(1);
+    expect(Math.round(selectionBounds(doc(), [paths[0].id])!.width)).toBe(150);
+  });
+
+  it('previews removal in red while ⌥ is held', () => {
+    overlapping();
+    builderTool.move!(p([50, 50], false), api());
+    const styles: string[] = [];
+    const ctx = new Proxy(
+      {},
+      {
+        get: (_t, k) => (k === 'setLineDash' || typeof k !== 'string' ? () => undefined : () => undefined),
+        set: (_t, k, v) => {
+          if (k === 'strokeStyle' || k === 'fillStyle') styles.push(String(v));
+          return true;
+        },
+      },
+    ) as CanvasRenderingContext2D;
+    builderTool.overlay!(ctx, api());
+    expect(styles).not.toContain('#e5484d');
+    builderTool.key!(new KeyboardEvent('keydown', { key: 'Alt', altKey: true }), api());
+    builderTool.overlay!(ctx, api());
+    expect(styles).toContain('#e5484d');
+    builderTool.keyUp!(new KeyboardEvent('keyup', { key: 'Alt' }), api());
+    styles.length = 0;
+    builderTool.overlay!(ctx, api());
+    expect(styles).not.toContain('#e5484d');
   });
 });

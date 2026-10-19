@@ -275,7 +275,8 @@ const SLIDES: Slide[] = [
     points: [
       <>Union, Subtract, Intersect and Exclude stay live. Expand only when you want to.</>,
       <>
-        <K k="⇧M" /> Shape builder: drag across regions to merge them, ⌥-drag to erase.
+        <K k="⇧M" /> Shape builder: drag across regions to merge them. ⌥-drag erases a region, or removes the
+        line you drag along.
       </>,
       <>Scissors cuts paths; drag a line to slice through everything.</>,
     ],

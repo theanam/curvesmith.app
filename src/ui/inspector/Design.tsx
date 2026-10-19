@@ -216,24 +216,10 @@ function TransformSection({ od }: { od: OpenDoc }) {
       <div className="insp-head">
         <h3>Transform</h3>
         <div className="actions">
-          <RefPointPicker value={ref} onChange={(p) => ((refPoint = p), setRef(p))} />
-          <Tip label={lock ? 'Proportions locked' : 'Lock proportions'}>
-            <button
-              className="icon-btn sm"
-              aria-pressed={lock}
-              aria-label="Lock proportions"
-              onClick={() => {
-                lockRatio = !lock;
-                setLock(!lock);
-              }}
-            >
-              <Icon name={lock ? 'link' : 'unlink'} size={14} />
-            </button>
-          </Tip>
           <AlignButtons count={ids.length} />
         </div>
       </div>
-      <div className="grid2">
+      <div className="wh-row">
         <NumberField
           label="X"
           ariaLabel="X position"
@@ -250,6 +236,9 @@ function TransformSection({ od }: { od: OpenDoc }) {
           mathUnit={unit}
           onChange={(v) => apply('Move', translate(0, toPt(v, unit) - ry))}
         />
+        <RefPointPicker value={ref} onChange={(p) => ((refPoint = p), setRef(p))} />
+      </div>
+      <div className="wh-row">
         <NumberField
           label="W"
           ariaLabel="Width"
@@ -270,6 +259,21 @@ function TransformSection({ od }: { od: OpenDoc }) {
           percentOf={fromPt(b.height, unit)}
           onChange={(v) => setSize(null, toPt(v, unit))}
         />
+        <Tip label={lock ? 'Proportions locked' : 'Lock proportions'}>
+          <button
+            className={`icon-btn sm wh-link ${lock ? 'on' : ''}`}
+            aria-pressed={lock}
+            aria-label="Lock proportions"
+            onClick={() => {
+              lockRatio = !lock;
+              setLock(!lock);
+            }}
+          >
+            <Icon name={lock ? 'link' : 'unlink'} size={14} />
+          </button>
+        </Tip>
+      </div>
+      <div className="wh-row">
         <NumberField
           label="∠"
           ariaLabel="Rotation"
@@ -280,7 +284,7 @@ function TransformSection({ od }: { od: OpenDoc }) {
             apply('Rotate', rotateAbout(((v - rot) * Math.PI) / 180, b.x + b.width / 2, b.y + b.height / 2))
           }
         />
-        <div className="row" style={{ gap: 4 }}>
+        <div className="row wh-span" style={{ gap: 4 }}>
           <Tip label="Flip horizontal" shortcut="Shift+H">
             <button
               className="small-btn"
