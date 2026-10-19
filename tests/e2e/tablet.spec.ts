@@ -119,6 +119,26 @@ test('Shape builder and double-tap work without hover', async ({ app: page }) =>
   });
   await t.tap([700, 650]);
   await page.waitForTimeout(400);
+  // Record what the canvas receives, so a failure says what happened.
+  await page.evaluate(() => {
+    const w = window as unknown as { __taps: string[] };
+    w.__taps = [];
+    const host = document.querySelector('[data-canvas-host]')!;
+    for (const type of ['pointerdown', 'pointerup', 'pointercancel', 'dblclick'])
+      host.addEventListener(
+        type,
+        (e) => w.__taps.push(`${type}:${(e as PointerEvent).pointerType ?? ''}@${Math.round(e.timeStamp)}`),
+        true,
+      );
+  });
   await t.doubleTap([340, 280]);
-  await expect.poll(() => state<boolean>(page, 'od.isolation !== null')).toBe(true);
+  await expect
+    .poll(async () => {
+      const entered = await state<boolean>(page, 'od.isolation !== null');
+      if (entered) return true;
+      const sel = await state<string>(page, 'od.selection.join(",")');
+      const taps = await page.evaluate(() => (window as unknown as { __taps: string[] }).__taps.join(' '));
+      return `not entered; selection=[${sel}] events=${taps}`;
+    })
+    .toBe(true);
 });
