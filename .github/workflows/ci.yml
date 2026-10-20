@@ -18,13 +18,5 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
-      # Traces and page snapshots of failed end-to-end tests, for debugging what CI saw.
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results
-          path: test-results/
-          retention-days: 7
+      # End-to-end tests run locally before pushing to main (npm run test:e2e).
       - run: npm run build
