@@ -181,11 +181,23 @@ function RefPointPicker({
     </P.Root>
   );
 }
-let lockRatio = false;
+/**
+ * Aspect ratio lock, remembered per kind of selection: text and images keep their shape by default
+ * (stretching them is rarely wanted); everything else starts unlocked.
+ */
+const lockRatio = { media: true, other: false };
+const isMedia = (doc: CurvsDocument, ids: string[]) =>
+  ids.length > 0 &&
+  ids.every((id) => {
+    const t = locate(doc, id)?.node.type;
+    return t === 'text' || t === 'image';
+  });
 
 function TransformSection({ od }: { od: OpenDoc }) {
   const [ref, setRef] = useState(refPoint);
-  const [lock, setLock] = useState(lockRatio);
+  const kind = isMedia(od.doc, od.selection) ? 'media' : 'other';
+  const [, rerender] = useState(0);
+  const lock = lockRatio[kind];
   const unit = od.doc.units;
   const b = selectionBounds(od.doc, od.selection);
   if (!b) return null;
@@ -260,14 +272,14 @@ function TransformSection({ od }: { od: OpenDoc }) {
           percentOf={fromPt(b.height, unit)}
           onChange={(v) => setSize(null, toPt(v, unit))}
         />
-        <Tip label={lock ? 'Proportions locked' : 'Lock proportions'}>
+        <Tip label={lock ? 'Aspect ratio locked' : 'Lock aspect ratio'}>
           <button
             className={`icon-btn sm wh-link ${lock ? 'on' : ''}`}
             aria-pressed={lock}
-            aria-label="Lock proportions"
+            aria-label="Lock aspect ratio"
             onClick={() => {
-              lockRatio = !lock;
-              setLock(!lock);
+              lockRatio[kind] = !lock;
+              rerender((n) => n + 1);
             }}
           >
             <Icon name={lock ? 'link' : 'unlink'} size={14} />
