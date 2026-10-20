@@ -434,3 +434,45 @@ test('guides come out of a ruler, move with the Move tool, and go when dropped o
   await page.keyboard.press(`${mod}+'`);
   expect(await state<boolean>(page, 'window.__curvesmith.getState().ui.showGrid')).toBe(false);
 });
+
+test('uploads a font, uses it on text, outlines it, and embeds it in .curvs', async ({ app: page }) => {
+  await newA4(page);
+  await page.keyboard.press('t');
+  await page.mouse.click(500, 300);
+  await page.keyboard.type('Hello');
+  await page.keyboard.press('Escape');
+  await page
+    .getByRole('button', { name: /^Font family/ })
+    .first()
+    .click();
+  await page
+    .locator('input[aria-label="Font files"]')
+    .first()
+    .setInputFiles('public/fonts/bricolage-grotesque-latin-standard-normal.woff2');
+  await expect(page.getByText('Added Bricolage Grotesque')).toBeVisible();
+  await page.getByRole('button', { name: 'My fonts', exact: true }).click();
+  await page.getByRole('option', { name: /Bricolage Grotesque/ }).click();
+  await expect
+    .poll(() => state<string>(page, 'od.doc.artboards[0].children[0].runs[0].font.family'))
+    .toBe('Bricolage Grotesque');
+  const result = await page.evaluate(async () => {
+    const c = (
+      window as unknown as {
+        __curvesmith: { getState(): { docs: { key: string; doc: never }[]; activeKey: string } };
+      }
+    ).__curvesmith;
+    const s = c.getState();
+    const doc = s.docs.find((d) => d.key === s.activeKey)!.doc as {
+      artboards: { children: unknown[] }[];
+    };
+    const outline = '/src/fonts/outline.ts';
+    const curvs = '/src/formats/curvs/index.ts';
+    const { outlineText } = await import(/* @vite-ignore */ outline);
+    const { writeCurvs, readCurvs } = await import(/* @vite-ignore */ curvs);
+    const shapes = await outlineText(doc.artboards[0].children[0]);
+    const back = await readCurvs(await writeCurvs(doc));
+    return { shapes: shapes?.length ?? 0, fonts: back.fonts.map((f: { family: string }) => f.family) };
+  });
+  expect(result.shapes).toBeGreaterThan(0);
+  expect(result.fonts).toEqual(['Bricolage Grotesque']);
+});

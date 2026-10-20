@@ -2,6 +2,7 @@
 import type { FontRef, PathNode, Subpath, TextNode, TextRun } from '../core/types';
 import { cssFont, layoutText, primaryRun, setMeasurer, type Measurer } from '../core/text';
 import { getFontBytes, onFontLoaded } from './loader';
+import { onUserFontsChanged } from './user';
 
 /** The slice of opentype.js's Font this module uses. */
 export type OtCommand =
@@ -19,7 +20,40 @@ export type OtFont = {
     options?: Record<string, unknown>,
   ): { commands: OtCommand[] };
   getAdvanceWidth(text: string, fontSize: number, options?: Record<string, unknown>): number;
+  charToGlyph?(c: string): OtGlyph;
+  getKerningValue?(left: OtGlyph, right: OtGlyph): number;
 };
+type OtGlyph = {
+  advanceWidth?: number;
+  getPath(x: number, y: number, fontSize: number): { commands: OtCommand[] };
+};
+
+/**
+ * Glyph-by-glyph layout without shaping: the font's own advances, pair kerning and tracking. Used when
+ * opentype.js can't apply a font's substitution tables (it runs some of them unconditionally).
+ */
+function unshaped(
+  font: OtFont,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  opts: Record<string, unknown>,
+) {
+  const scale = size / font.unitsPerEm;
+  const tracking = ((Number(opts.tracking) || 0) * size) / 1000;
+  const commands: OtCommand[] = [];
+  let cx = x;
+  let prev: OtGlyph | null = null;
+  for (const ch of text) {
+    const g = font.charToGlyph!(ch);
+    if (prev && opts.kerning !== false && font.getKerningValue) cx += font.getKerningValue(prev, g) * scale;
+    commands.push(...g.getPath(cx, y, size).commands);
+    cx += (g.advanceWidth ?? 0) * scale + tracking;
+    prev = g;
+  }
+  return { commands, width: cx - x };
+}
 
 const DEFAULT_TAGS = ['liga', 'rlig'];
 
@@ -126,16 +160,38 @@ export function textToSubpaths(node: TextNode, font: OtFont): Subpath[] {
   if (!run) return [];
   const layout = layoutText(node);
   const opts = renderOptions(run);
+  // opentype.js throws on substitution tables it can't apply yet; such fonts are laid out unshaped.
+  let shaped = true;
+  const getPath = (text: string, x: number, y: number) => {
+    if (shaped)
+      try {
+        return font.getPath(text, x, y, run.size, opts);
+      } catch (e) {
+        if (!font.charToGlyph) throw e;
+        shaped = false;
+      }
+    return unshaped(font, text, x, y, run.size, opts);
+  };
+  const advance = (text: string) => {
+    if (shaped)
+      try {
+        return font.getAdvanceWidth(text, run.size, opts);
+      } catch (e) {
+        if (!font.charToGlyph) throw e;
+        shaped = false;
+      }
+    return unshaped(font, text, 0, 0, run.size, opts).width;
+  };
   const out: Subpath[] = [];
   for (const line of layout.lines) {
     if (!line.text) continue;
     let x = line.x;
     if (node.paragraph.align === 'center' || node.paragraph.align === 'right') {
       // opentype adds tracking after the last glyph too; the layout measures n - 1 gaps.
-      const w = font.getAdvanceWidth(line.text, run.size, opts) - ((run.tracking || 0) * run.size) / 1000;
+      const w = advance(line.text) - ((run.tracking || 0) * run.size) / 1000;
       x = node.paragraph.align === 'center' ? line.x + (line.width - w) / 2 : line.x + line.width - w;
     }
-    out.push(...commandsToSubpaths(font.getPath(line.text, x, line.baseline, run.size, opts).commands, true));
+    out.push(...commandsToSubpaths(getPath(line.text, x, line.baseline).commands, true));
   }
   return out;
 }
@@ -149,6 +205,11 @@ const loadOpentype = () =>
   }));
 
 const parsed = new Map<string, Promise<OtFont | null>>();
+// A family the user just added (or removed) may resolve to a different face now.
+onUserFontsChanged((families) => {
+  for (const k of [...parsed.keys()])
+    if (families.some((f) => k.toLowerCase().startsWith(`${f.toLowerCase()}|`))) parsed.delete(k);
+});
 
 /** The parsed opentype font for a FontRef (cached), or null when the face is unavailable. */
 export function getParsedFont(font: FontRef): Promise<OtFont | null> {

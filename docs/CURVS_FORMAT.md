@@ -37,7 +37,7 @@ my-design.curvs
   "swatches": [ { "id": "sw_1", "name": "Deep teal", "color": { "space": "srgb", "r": 0.169, "g": 0.373, "b": 0.42, "a": 1 }, "global": true } ],
   "styles":   [ { "id": "st_1", "name": "Wave", "appearance": { /* Appearance */ } } ],
   "symbols":  [ { "id": "sy_1", "name": "Sun", "root": { /* Node */ } } ],
-  "fonts":    [ { "family": "Geist", "style": "Regular", "file": "fonts/ab12….woff2" } ],
+  "fonts":    [ { "family": "Geist", "style": "Regular", "file": "fonts/ab12….ttf" } ],   // uploaded fonts the document uses are embedded; Google and installed fonts are listed by name only (no file)
   "artboards": [
     {
       "id": "ab_1", "name": "Poster A2",

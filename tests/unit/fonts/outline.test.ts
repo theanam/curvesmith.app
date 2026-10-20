@@ -89,6 +89,20 @@ describe('textToSubpaths', () => {
     expect(sps.some((s) => s.nodes.some((n) => n.in || n.out))).toBe(true);
   });
 
+  it('fonts whose substitution tables opentype.js cannot apply are laid out glyph by glyph', () => {
+    const broken = Object.create(font) as OtFont;
+    broken.getPath = () => {
+      throw new Error('lookupType: 6 - substFormat: 2 is not yet supported');
+    };
+    broken.getAdvanceWidth = broken.getPath as never;
+    const node = textNode('HH', {}, { tracking: 100 });
+    const expected = bounds(textToSubpaths(node, font));
+    const got = bounds(textToSubpaths(node, broken));
+    expect(got.x0).toBeCloseTo(expected.x0, 0);
+    expect(got.x1).toBeCloseTo(expected.x1, 0);
+    expect(got.y1).toBeCloseTo(expected.y1, 0);
+  });
+
   it('tracking widens the outline', () => {
     const plain = bounds(textToSubpaths(textNode('HHHH'), font));
     const loose = bounds(textToSubpaths(textNode('HHHH', {}, { tracking: 200 }), font));

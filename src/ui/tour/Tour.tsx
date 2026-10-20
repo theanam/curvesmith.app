@@ -344,6 +344,7 @@ const SLIDES: Slide[] = [
     title: 'Every Google Font, with previews',
     points: [
       <>Search nearly 2,000 families by name or category.</>,
+      <>Upload your own fonts, or use the ones installed on your computer.</>,
       <>OpenType features, tracking and leading. Point text or area text.</>,
       <>Create outlines whenever you need paths.</>,
     ],

@@ -42,7 +42,7 @@ No install, no account, and your files never leave your device.
 - **Effects**: drop shadow, inner shadow and blur.
 - **Print colors**: RGB or CMYK documents. CMYK keeps exact ink values (rich blacks included) and exports DeviceCMYK PDF, AI and EPS.
 - **Assets**: global colors that update every use, symbols with live instances, and saved styles.
-- **Fonts**: a searchable picker with previews of nearly 2,000 Google Fonts, sorted by category.
+- **Fonts**: a searchable picker with previews of nearly 2,000 Google Fonts, sorted by category, plus your own: upload TTF, OTF, WOFF or WOFF2 files (they travel inside `.curvs` files), or use the fonts installed on your computer.
 
 **Working fast**
 - **Live booleans** (union, subtract, intersect, exclude) that stay editable, plus Divide, compound paths and clip groups.

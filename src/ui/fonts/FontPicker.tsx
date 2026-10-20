@@ -18,6 +18,18 @@ import {
   type FontCategoryId,
 } from '../../fonts/catalog';
 import { ensureFont } from '../../fonts/loader';
+import {
+  addFontFiles,
+  addSystemFontByName,
+  loadSystemFonts,
+  onUserFontsChanged,
+  removeUserFamily,
+  systemFontsLoaded,
+  systemFontsSupported,
+  userFamilies,
+  userFontsVersion,
+} from '../../fonts/user';
+import { toast } from '../toast';
 import { pushRecentFont, readRecentFonts } from './recent';
 import './FontPicker.css';
 
@@ -48,8 +60,28 @@ export function loadStylesheet(href: string) {
 
 /** Load the glyphs of a family's own name so its row can be set in its face. Bundled faces need nothing. */
 function loadPreview(entry: CatalogFont) {
+  // Uploaded and embedded faces need registering; installed fonts render by name already.
+  if (entry.source === 'upload' || entry.source === 'document')
+    return void ensureFont({
+      family: entry.family,
+      weight: nearestWeight(entry.weights, 400),
+      style: 'normal',
+    });
   if (entry.bundled || entry.local) return;
   loadStylesheet(previewCssUrl(entry));
+}
+
+const SOURCE_LABEL: Record<NonNullable<CatalogFont['source']>, string> = {
+  upload: 'Uploaded',
+  document: 'In file',
+  system: 'On device',
+};
+
+/** Re-render when the user's fonts change. */
+function useUserFontsVersion() {
+  const [v, setV] = useState(userFontsVersion);
+  useEffect(() => onUserFontsChanged(() => setV(userFontsVersion())), []);
+  return v;
 }
 
 const faceStyle = (family: string) => ({ fontFamily: `"${family.replace(/"/g, '')}", var(--font-ui)` });
@@ -63,7 +95,19 @@ const synthetic = (family: string, weight = 400): CatalogFont => ({
   local: true,
 });
 
+/** The Google Fonts catalogue with the user's own families first (their face wins over a same-named one). */
 function useCatalog(): CatalogFont[] {
+  const google = useGoogleCatalog();
+  const v = useUserFontsVersion();
+  return useMemo(() => {
+    void v;
+    const mine = userFamilies();
+    const have = new Set(mine.map((f) => f.family.toLowerCase()));
+    return [...mine, ...google.filter((f) => !have.has(f.family.toLowerCase()))];
+  }, [google, v]);
+}
+
+function useGoogleCatalog(): CatalogFont[] {
   const [list, setList] = useState<CatalogFont[]>(() => loadedCatalog() ?? BUNDLED_FONTS);
   useEffect(() => {
     let live = true;
@@ -212,7 +256,34 @@ function FamilyList({
     }
   };
 
-  const cats = FONT_CATEGORIES.filter((c) => c.id !== 'document' || (documentFonts?.length ?? 0) > 0);
+  const hasMine = all.some((f) => f.source === 'upload' || f.source === 'document');
+  const cats = FONT_CATEGORIES.filter(
+    (c) => (c.id !== 'document' || (documentFonts?.length ?? 0) > 0) && (c.id !== 'mine' || hasMine),
+  );
+  const q = query.trim();
+  const exact = !!q && all.some((f) => f.family.toLowerCase() === q.toLowerCase());
+  const needsAccess = cat === 'device' && systemFontsSupported() && !systemFontsLoaded();
+  const pickByName = async () => {
+    if (await addSystemFontByName(q))
+      onPick({
+        id: familyToId(q),
+        family: q,
+        category: 'sans',
+        weights: [400],
+        italic: false,
+        local: true,
+        source: 'system',
+      });
+    else toast.error(`No font named “${q}” is installed on this device.`);
+  };
+  const allowAccess = async () => {
+    try {
+      const n = await loadSystemFonts();
+      if (!n) toast.error('No installed fonts were shared.');
+    } catch {
+      toast.error('Access to installed fonts was not allowed. Turn it on in the site settings to use them.');
+    }
+  };
   const listId = `${baseId}-list`;
   const optId = (i: number) => `${baseId}-opt-${i}`;
   const active = items.length ? Math.min(highlight, items.length - 1) : -1;
@@ -266,13 +337,25 @@ function FamilyList({
         role="listbox"
         aria-label="Fonts"
         tabIndex={-1}
-        style={{ height: Math.min(VIEW_HEIGHT, Math.max(items.length, 1) * ROW_HEIGHT) }}
+        // Rows are virtualised to a fixed height; messages and the permission prompt size to their content.
+        style={
+          items.length && !needsAccess
+            ? { height: Math.min(VIEW_HEIGHT, items.length * ROW_HEIGHT) }
+            : undefined
+        }
         onScroll={(e) => {
           const t = e.currentTarget.scrollTop;
           if (Math.abs(t - scrollTop) >= ROW_HEIGHT / 2) setScrollTop(t);
         }}
       >
-        {items.length ? (
+        {needsAccess ? (
+          <div className="cs-fp-access">
+            <p>Use the fonts installed on this computer. The browser asks once.</p>
+            <button type="button" className="cs-fp-action primary" onClick={() => void allowAccess()}>
+              Show installed fonts
+            </button>
+          </div>
+        ) : items.length ? (
           <div className="cs-fp-sizer" style={{ height: items.length * ROW_HEIGHT }}>
             {visible.map((it, k) => {
               const i = first + k;
@@ -293,11 +376,32 @@ function FamilyList({
                   <span className="cs-fp-name" style={faceStyle(it.entry.family)}>
                     {it.entry.family}
                   </span>
+                  {it.entry.source === 'upload' && (
+                    <button
+                      type="button"
+                      className="cs-fp-remove"
+                      aria-label={`Remove ${it.entry.family} from my fonts`}
+                      title="Remove from my fonts"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeUserFamily(it.entry.family);
+                      }}
+                    >
+                      <svg className="cs-fp-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7 7l10 10M17 7L7 17" />
+                      </svg>
+                    </button>
+                  )}
                   {selected ? (
                     <Check />
                   ) : (
                     <span className="cs-fp-meta">
-                      {it.recent ? 'Recent' : CATEGORY_LABEL[it.entry.category]}
+                      {it.recent
+                        ? 'Recent'
+                        : it.entry.source
+                          ? SOURCE_LABEL[it.entry.source]
+                          : CATEGORY_LABEL[it.entry.category]}
                     </span>
                   )}
                 </div>
@@ -305,10 +409,56 @@ function FamilyList({
             })}
           </div>
         ) : (
-          <div className="cs-fp-empty">No fonts found</div>
+          <div className="cs-fp-empty">
+            {cat === 'device' && !systemFontsSupported()
+              ? 'This browser keeps its font list private. Type a font’s name above to use it.'
+              : 'No fonts found'}
+          </div>
         )}
       </div>
+      <div className="cs-fp-foot">
+        {q && !exact && (
+          <button type="button" className="cs-fp-action" onClick={() => void pickByName()}>
+            Use “{q}” from this device
+          </button>
+        )}
+        <UploadFonts />
+      </div>
     </div>
+  );
+}
+
+/** Upload font files into this browser's font library. */
+function UploadFonts() {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <button type="button" className="cs-fp-action" onClick={() => input.current?.click()}>
+        <svg className="cs-fp-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 16V4M7 9l5-5 5 5M5 20h14" />
+        </svg>
+        Upload fonts
+      </button>
+      <input
+        ref={input}
+        type="file"
+        hidden
+        multiple
+        accept=".ttf,.otf,.woff,.woff2,.ttc,font/ttf,font/otf,font/woff,font/woff2"
+        aria-label="Font files"
+        onChange={async (e) => {
+          const files = [...(e.target.files ?? [])];
+          e.target.value = '';
+          if (!files.length) return;
+          const { families, errors } = await addFontFiles(files);
+          if (families.length)
+            toast.success(
+              families.length === 1 ? `Added ${families[0]}` : `Added ${families.length} font families`,
+            );
+          for (const err of errors) toast.error(err);
+        }}
+      />
+    </>
   );
 }
 

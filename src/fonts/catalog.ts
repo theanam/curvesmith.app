@@ -3,8 +3,8 @@
    Everything here is pure except loadCatalog(), which fetches the JSON once. */
 
 export type FontCategory = 'sans' | 'serif' | 'display' | 'handwriting' | 'mono';
-/** Category filter ids: the five font categories plus the virtual "all" and "document" lists. */
-export type FontCategoryId = 'all' | 'document' | FontCategory;
+/** Category filter ids: the five font categories plus the virtual lists (all, the user's own, installed, in the document). */
+export type FontCategoryId = 'all' | 'mine' | 'device' | 'document' | FontCategory;
 
 /** A compact catalogue row: [id, family, category, weights, hasItalic]. */
 export type CatalogRow = [string, string, string, number[], number | boolean];
@@ -21,10 +21,14 @@ export type CatalogFont = {
   bundled?: number[];
   /** Not in the catalogue (an uploaded or unknown family); nothing to fetch for previews. */
   local?: boolean;
+  /** One of the user's fonts: uploaded, installed on the device, or embedded in a document. */
+  source?: 'upload' | 'system' | 'document';
 };
 
 export const FONT_CATEGORIES: { id: FontCategoryId; label: string }[] = [
   { id: 'all', label: 'All' },
+  { id: 'mine', label: 'My fonts' },
+  { id: 'device', label: 'On this device' },
   { id: 'document', label: 'In this document' },
   { id: 'sans', label: 'Sans' },
   { id: 'serif', label: 'Serif' },
@@ -130,7 +134,9 @@ export function filterFonts(
   if (cat === 'document') {
     const used = new Set([...(documentFonts ?? [])].map((f) => f.toLowerCase()));
     inCat = list.filter((f) => used.has(f.family.toLowerCase()));
-  } else if (cat !== 'all') inCat = list.filter((f) => f.category === cat);
+  } else if (cat === 'mine') inCat = list.filter((f) => f.source === 'upload' || f.source === 'document');
+  else if (cat === 'device') inCat = list.filter((f) => f.source === 'system');
+  else if (cat !== 'all') inCat = list.filter((f) => f.category === cat && !f.source);
   if (!q) return [...inCat];
   const starts: CatalogFont[] = [];
   const word: CatalogFont[] = [];

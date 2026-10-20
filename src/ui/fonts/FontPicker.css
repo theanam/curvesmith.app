@@ -227,3 +227,89 @@
 .cs-fp-select-indicator {
   display: flex;
 }
+
+/* User fonts: upload, use an installed font by name, and the permission prompt for installed fonts. */
+.cs-fp-name {
+  flex: 1 1 auto;
+}
+.cs-fp-remove {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  cursor: pointer;
+}
+.cs-fp-row:hover .cs-fp-remove,
+.cs-fp-row[data-highlighted] .cs-fp-remove {
+  opacity: 1;
+}
+.cs-fp-remove:hover {
+  background: var(--line);
+  color: var(--fg);
+}
+@media (hover: none) {
+  .cs-fp-remove {
+    opacity: 1;
+  }
+}
+.cs-fp-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
+}
+.cs-fp-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-fp-action:hover {
+  background: var(--hover);
+}
+.cs-fp-action.primary {
+  justify-content: center;
+  width: auto;
+  padding: 0 var(--space-3);
+  background: var(--cs-volt);
+  color: var(--cs-on-volt);
+  font-weight: 600;
+}
+.cs-fp-action.primary:hover {
+  filter: brightness(1.05);
+}
+.cs-fp-access {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.cs-fp-access p {
+  margin: 0;
+  line-height: 1.45;
+}

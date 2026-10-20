@@ -53,6 +53,18 @@ function useWide(min: number) {
   return wide;
 }
 
+/** The user's fonts: the uploaded library and installed fonts at start-up, and fonts that open documents embed. */
+function useUserFonts() {
+  const docs = useEditor((st) => st.docs);
+  useEffect(() => {
+    void import('../fonts/user').then((m) => m.initUserFonts());
+  }, []);
+  useEffect(() => {
+    if (docs.some((d) => d.doc.fonts.some((f) => f.file)))
+      void import('../fonts/user').then((m) => docs.forEach((d) => void m.registerDocumentFonts(d.doc)));
+  }, [docs]);
+}
+
 /** Touch screens: show the touch keys once a finger or pen is used, and keep page zoom off the app chrome. */
 function useTouch() {
   useEffect(() => {
@@ -268,6 +280,7 @@ export function App() {
   const theme = useEditor((s) => s.theme);
   useKeyboard();
   useTouch();
+  useUserFonts();
   useGlobalDrop();
   const view =
     route === 'editor' && hasDoc

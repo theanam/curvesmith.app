@@ -164,6 +164,23 @@ export function HelpPage() {
       ),
     },
     {
+      icon: 'text',
+      title: 'Fonts',
+      body: (
+        <ul>
+          <li>The font picker has every Google Font, searchable by name and category.</li>
+          <li>
+            Upload fonts (TTF, OTF, WOFF, WOFF2 or a collection) from Upload fonts at the bottom of the
+            picker. They stay in this browser under My fonts, and a .curvs file that uses one carries a copy.
+          </li>
+          <li>
+            On this device lists the fonts installed on your computer in Chrome and Edge, after you allow it
+            once. In other browsers, type an installed font’s name in the search.
+          </li>
+        </ul>
+      ),
+    },
+    {
       icon: 'palette',
       title: 'Colors and styles',
       body: (
@@ -308,9 +325,9 @@ export function AboutPage() {
           </h2>
           <p>
             React, Zustand and Immer · Skia PathOps for booleans · pdf-lib and opentype.js · fflate · Radix UI
-            and cmdk · ONNX Runtime Web with U²-Netp (Apache-2.0) and Real-ESRGAN (BSD-3-Clause) for on-device
-            AI. Bricolage Grotesque, Geist and Geist Mono under the SIL Open Font License; document fonts from
-            Google Fonts.
+            and cmdk · wawoff2 (MIT) for WOFF2 fonts · ONNX Runtime Web with U²-Netp (Apache-2.0) and
+            Real-ESRGAN (BSD-3-Clause) for on-device AI. Bricolage Grotesque, Geist and Geist Mono under the
+            SIL Open Font License; document fonts from Google Fonts.
           </p>
         </section>
       </div>

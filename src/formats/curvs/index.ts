@@ -1,7 +1,11 @@
 /* .curvs native format (docs/CURVS_FORMAT.md): a ZIP with mimetype (stored, first), manifest.json,
    document.json, thumbnail.png and assets/<sha256>.<ext>. */
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
-import type { CurvsDocument, ExportScope, SceneNode } from '../../core/types';
+import type { CurvsDocument, ExportScope, FontRef, SceneNode } from '../../core/types';
+import { fontsInUse } from '../../fonts/usage';
+import { styleLabel } from '../../fonts/catalog';
+import { sniffFont } from '../../fonts/sfnt';
+import { embeddableFace } from '../../fonts/user';
 import type { ExportContext, FormatAdapter, ImportOptions } from '../types';
 import { emptyReport } from '../types';
 import {
@@ -147,7 +151,18 @@ function nodeFromJson(raw: Record<string, unknown>, path: string): SceneNode {
   return node as unknown as SceneNode;
 }
 
-export type WriteCurvsOptions = { thumbnail?: Blob | Uint8Array | null; now?: Date };
+export type WriteCurvsOptions = {
+  thumbnail?: Blob | Uint8Array | null;
+  now?: Date;
+  /** The font file to embed for a face the document uses, or null to reference it by name only. */
+  fontFile?: (font: FontRef) => { family: string; weight: number; style: 'normal' | 'italic'; bytes: Uint8Array } | null;
+};
+
+/** Uploaded fonts travel with the document; installed and Google fonts are referenced by name. */
+const embeddableFont: NonNullable<WriteCurvsOptions['fontFile']> = (font) => {
+  const e = embeddableFace(font);
+  return e ? { family: e.face.family, weight: e.face.weight, style: e.face.style, bytes: e.bytes } : null;
+};
 
 /** Serialize a document into .curvs bytes. */
 export async function writeCurvs(doc: CurvsDocument, opts: WriteCurvsOptions = {}): Promise<Uint8Array> {
@@ -171,6 +186,27 @@ export async function writeCurvs(doc: CurvsDocument, opts: WriteCurvsOptions = {
     files[path] = [decoded.bytes, { level: 0 }];
   }
 
+  // Fonts: keep the files the document already carries, and embed the user's own faces it uses.
+  const fonts: CurvsDocument['fonts'] = [];
+  const fontPaths = new Set<string>();
+  const addFontFile = async (family: string, style: string, bytes: Uint8Array) => {
+    const ext = sniffFont(bytes) === 'otf' ? 'otf' : sniffFont(bytes) === 'woff2' ? 'woff2' : 'ttf';
+    const path = `fonts/${await sha256Hex(bytes)}.${ext}`;
+    if (fontPaths.has(path)) return;
+    fontPaths.add(path);
+    files[path] = [bytes, { level: 6 }];
+    fonts.push({ family, style, file: path });
+  };
+  for (const entry of doc.fonts) {
+    const decoded = entry.file && doc.assets[entry.file] ? dataUrlToBytes(doc.assets[entry.file]) : null;
+    if (decoded) await addFontFile(entry.family, entry.style, decoded.bytes);
+    else if (!entry.file) fonts.push(entry);
+  }
+  for (const ref of fontsInUse(doc)) {
+    const f = (opts.fontFile ?? embeddableFont)(ref);
+    if (f) await addFontFile(f.family, styleLabel(f.weight, f.style), f.bytes);
+  }
+
   const now = (opts.now ?? new Date()).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const extra = { ...doc.extra };
   const unknownDoc = (extra[UNKNOWN_DOC] as Record<string, unknown>) ?? {};
@@ -188,7 +224,7 @@ export async function writeCurvs(doc: CurvsDocument, opts: WriteCurvsOptions = {
     swatches: doc.swatches,
     styles: doc.styles,
     symbols: doc.symbols.map((s) => ({ ...s, root: nodeToJson(s.root) })),
-    fonts: doc.fonts,
+    fonts,
     artboards: doc.artboards.map((ab) => ({ ...ab, children: ab.children.map(nodeToJson) })),
     ...(doc.view ? { view: doc.view } : {}),
     extra,
@@ -317,6 +353,9 @@ export async function readCurvs(bytes: Uint8Array): Promise<CurvsDocument> {
     extra,
   };
   const ids = new Set<string>();
+  for (const entry of doc.fonts)
+    if (entry.file && files[entry.file] && !doc.assets[entry.file])
+      doc.assets[entry.file] = bytesToDataUrl(files[entry.file], 'font/' + (entry.file.split('.').pop() ?? 'ttf'));
   forEachNode(doc, (n) => {
     if (ids.has(n.id)) throw new CurvsError(`Two objects share the id ${n.id}.`);
     ids.add(n.id);

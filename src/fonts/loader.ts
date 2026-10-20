@@ -1,8 +1,10 @@
 /* Font loading for the canvas, outlining and PDF export.
-   Faces come from the Fontsource CDN as single latin TTFs, are cached in IndexedDB for
-   offline use, and are registered with document.fonts so the canvas can draw them.
+   The user's own fonts (uploads, installed fonts, fonts embedded in documents) come first. Everything else
+   comes from the Fontsource CDN as single latin TTFs, cached in IndexedDB for offline use. Faces are
+   registered with document.fonts so the canvas can draw them.
    Failures (offline, unknown family) resolve quietly and are remembered for the session. */
-import type { CurvsDocument, FontRef, SceneNode } from '../core/types';
+import type { CurvsDocument, FontRef } from '../core/types';
+import { fontsInUse } from './usage';
 import {
   findFont,
   familyToId,
@@ -11,6 +13,7 @@ import {
   nearestWeight,
   type CatalogFont,
 } from './catalog';
+import { onUserFontsChanged, pickUserFace, userFaceBytes, type UserFace } from './user';
 
 const DB_NAME = 'curvesmith-fonts';
 const STORE = 'ttf';
@@ -22,6 +25,8 @@ type Face = {
   style: 'normal' | 'italic';
   entry?: CatalogFont;
   key: string;
+  /** The user's own face, when the family is one of theirs. */
+  user?: UserFace;
 };
 
 const listeners = new Set<() => void>();
@@ -47,6 +52,9 @@ function notify() {
 
 /** Snap a FontRef to a face the catalogue has (nearest weight; italic only where it exists). */
 async function resolveFace(font: FontRef): Promise<Face> {
+  const user = pickUserFace(font);
+  if (user)
+    return { id: user.key, family: user.family, weight: user.weight, style: user.style, key: user.key, user };
   let list: CatalogFont[] = [];
   try {
     list = await loadCatalog();
@@ -128,6 +136,7 @@ function faceBytes(face: Face): Promise<Uint8Array | null> {
   const hit = bytesCache.get(face.key);
   if (hit) return hit;
   const p = (async () => {
+    if (face.user) return userFaceBytes(face.user);
     if (failed.has(face.key)) return null;
     const cached = await readCached(face.key);
     if (cached) return cached;
@@ -162,8 +171,9 @@ function register(face: Face): Promise<boolean> {
     if (!bytes || typeof FontFace === 'undefined' || typeof document === 'undefined' || !document.fonts)
       return false;
     try {
+      const range = face.user?.weights;
       const ff = new FontFace(face.family, bytes.slice().buffer, {
-        weight: String(face.weight),
+        weight: range ? `${range[0]} ${range[1]}` : String(face.weight),
         style: face.style,
       });
       await ff.load();
@@ -207,6 +217,15 @@ export function ensureFont(font: FontRef): Promise<void> {
   return p;
 }
 
+// When the user adds or removes fonts, forget what was resolved for those families and redraw.
+onUserFontsChanged((families) => {
+  const hit = (k: string) => families.some((f) => k.toLowerCase().startsWith(`${f.toLowerCase()}|`));
+  for (const k of [...ensured.keys()]) if (hit(k)) ensured.delete(k);
+  for (const k of [...bytesCache.keys()])
+    if (k.startsWith('user:') || k.startsWith('doc:') || k.startsWith('system')) bytesCache.delete(k);
+  notify();
+});
+
 /** Subscribe to font-loaded events (the canvas re-renders). */
 export function onFontLoaded(fn: () => void): () => void {
   listeners.add(fn);
@@ -217,32 +236,7 @@ export function onFontLoaded(fn: () => void): () => void {
 
 /* ---------- documents ---------- */
 
-function collect(node: SceneNode, out: Map<string, FontRef>) {
-  switch (node.type) {
-    case 'text':
-      for (const r of node.runs)
-        out.set(refKey(r.font), { family: r.font.family, weight: r.font.weight, style: r.font.style });
-      break;
-    case 'group':
-    case 'boolean':
-      node.children.forEach((c) => collect(c, out));
-      break;
-    case 'clipGroup':
-      collect(node.clip, out);
-      node.children.forEach((c) => collect(c, out));
-      break;
-    default:
-      break;
-  }
-}
-
-/** Every distinct FontRef used by text in the document (artboards and symbols). */
-export function fontsInUse(doc: Pick<CurvsDocument, 'artboards' | 'symbols'>): FontRef[] {
-  const out = new Map<string, FontRef>();
-  for (const ab of doc.artboards) ab.children.forEach((c) => collect(c, out));
-  for (const s of doc.symbols ?? []) collect(s.root, out);
-  return [...out.values()];
-}
+export { fontsInUse } from './usage';
 
 /** Load every face a document uses. Never rejects. */
 export async function ensureDocumentFonts(doc: Pick<CurvsDocument, 'artboards' | 'symbols'>): Promise<void> {
