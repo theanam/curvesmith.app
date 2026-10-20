@@ -1,5 +1,5 @@
 import { devices, type CDPSession, type Page } from '@playwright/test';
-import { test, expect, state } from './fixtures';
+import { test, expect, state, mod } from './fixtures';
 
 const { defaultBrowserType: _b, ...ipad } = devices['iPad Pro 11 landscape'];
 test.use(ipad);
@@ -98,27 +98,13 @@ test('Shape builder and double-tap work without hover', async ({ app: page }) =>
   await t.drag([320, 270], [410, 330]);
   expect(await kids(page)).toEqual(['path', 'path']);
 
+  // Group both through the app (select all, then the Group shortcut) and wait until it is done.
   await page.tap('[data-tool="move"]');
-  await page.evaluate(async () => {
-    const c = (
-      window as unknown as {
-        __curvesmith: {
-          getState(): {
-            docs: { key: string; doc: { artboards: { children: { id: string }[] }[] } }[];
-            activeKey: string;
-          };
-          select(ids: string[]): void;
-        };
-      }
-    ).__curvesmith;
-    const s = c.getState();
-    const od = s.docs.find((d) => d.key === s.activeKey)!;
-    c.select(od.doc.artboards[0].children.map((n) => n.id));
-    const m = '/src/state/actions.ts';
-    (await import(/* @vite-ignore */ m)).groupSelection();
-  });
-  await t.tap([700, 650]);
-  await page.waitForTimeout(400);
+  await page.keyboard.press(`${mod}+a`);
+  await page.keyboard.press(`${mod}+g`);
+  await expect.poll(() => kids(page)).toEqual(['group']);
+  await page.keyboard.press('Escape');
+  await expect.poll(() => state<number>(page, 'od.selection.length')).toBe(0);
   // Record what the canvas receives, so a failure says what happened.
   await page.evaluate(() => {
     const w = window as unknown as { __taps: string[] };
