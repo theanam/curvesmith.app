@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import * as T from '@radix-ui/react-tooltip';
 import { makeRect, makeText } from '../../src/core/document';
 import type { ImageNode } from '../../src/core/types';
-import { activeDoc, mutate, select } from '../../src/state/store';
+import { mutate, select } from '../../src/state/store';
 import { selectionBounds } from '../../src/core/transform';
 import { DesignTab } from '../../src/ui/inspector/Design';
 import { doc, freshDoc } from './helpers';
