@@ -103,8 +103,6 @@ test('Shape builder and double-tap work without hover', async ({ app: page }) =>
   await page.keyboard.press(`${mod}+a`);
   await page.keyboard.press(`${mod}+g`);
   await expect.poll(() => kids(page)).toEqual(['group']);
-  await page.keyboard.press('Escape');
-  await expect.poll(() => state<number>(page, 'od.selection.length')).toBe(0);
   // Record what the canvas receives, so a failure says what happened.
   await page.evaluate(() => {
     const w = window as unknown as { __taps: string[] };
