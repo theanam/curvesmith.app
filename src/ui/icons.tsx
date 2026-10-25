@@ -46,6 +46,7 @@ export const ICONS = {
   boolean: 'M9 4a5 5 0 1 0 0 10a5 5 0 1 0 0-10M15 10a5 5 0 1 0 0 10a5 5 0 1 0 0-10',
   symbol: 'M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5',
   clip: 'M4 4h10v10H4zM10 10h10v10H10z',
+  crop: 'M7 3v14h14M3 7h14v14',
   home: 'M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z',
   folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   libraries: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',

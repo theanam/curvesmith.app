@@ -452,6 +452,9 @@ svg.icon {
 }
 
 .ctx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 28px;
   padding: 0 9px;
   border: 0;

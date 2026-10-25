@@ -13,7 +13,7 @@ import {
 } from '../state/store';
 import { commandForEvent, isEnabled, run } from '../state/commands';
 import { toolForKey } from '../tools/ids';
-import { TOOL_IMPLS } from '../tools';
+import { activeToolImpl } from '../tools';
 import { TopBar } from './shell/TopBar';
 import { ContextBar } from './shell/ContextBar';
 import { Toolbar, resetColors, swapColors, swapFocus } from './shell/Toolbar';
@@ -114,7 +114,7 @@ function useKeyboard() {
       const inEditor = s.route === 'editor' && !!s.activeKey;
       if (inEditor) {
         const api = currentToolApi();
-        const tool = TOOL_IMPLS[s.springTool ?? s.tool];
+        const tool = activeToolImpl(s);
         if (api && tool.key?.(e, api)) {
           e.preventDefault();
           requestCanvasRender();
@@ -167,7 +167,7 @@ function useKeyboard() {
       if (inEditor && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const t = toolForKey(e);
         if (t) {
-          setState({ tool: t, springTool: null, editingText: null });
+          setState({ tool: t, springTool: null, editingText: null, croppingImage: null });
           e.preventDefault();
         }
       }
@@ -176,7 +176,7 @@ function useKeyboard() {
       const s = getState();
       if (s.route === 'editor') {
         const api = currentToolApi();
-        const tool = TOOL_IMPLS[s.springTool ?? s.tool];
+        const tool = activeToolImpl(s);
         if (api && tool.keyUp?.(e, api)) return;
       }
       if (e.key === ' ' && s.springTool) setState({ springTool: null });

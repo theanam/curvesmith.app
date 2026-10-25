@@ -16,7 +16,7 @@ import {
 } from '../../state/store';
 import { getInput, markTouch, setPointerType } from '../../state/input';
 import { TouchBar } from './TouchBar';
-import { TOOL_IMPLS } from '../../tools';
+import { activeToolImpl } from '../../tools';
 import type { Overlay, ToolApi, ToolPointer } from '../../tools/types';
 import { createToolApi, sharedOverlay } from '../../tools/api';
 import { fitRect, toScreen, toWorld, zoomAt, clampZoom } from '../../render/viewport';
@@ -57,6 +57,7 @@ export function CanvasView() {
   const tool = useEditor((s) => s.tool);
   const springTool = useEditor((s) => s.springTool);
   const editingText = useEditor((s) => s.editingText);
+  const croppingImage = useEditor((s) => s.croppingImage);
   const hostRef = useRef<HTMLDivElement>(null);
   const docCanvas = useRef<HTMLCanvasElement>(null);
   const overCanvas = useRef<HTMLCanvasElement>(null);
@@ -70,10 +71,12 @@ export function CanvasView() {
   /** Fingers left over from a pinch do nothing until they lift. */
   const ignored = useRef(new Set<number>());
   const lastTap = useRef<{ t: number; at: Vec } | null>(null);
-  const syntheticDbl = useRef(0);
+  /** When a double-tap was last synthesized (never, at first: a real double-click right after load counts). */
+  const syntheticDbl = useRef(-Infinity);
   const [cursor, setCursor] = useState<string>('default');
 
   const activeTool = springTool ?? tool;
+  const impl = activeToolImpl({ springTool, tool, croppingImage });
 
   // ---- Size --------------------------------------------------------------------------------
   useLayoutEffect(() => {
@@ -195,7 +198,7 @@ export function CanvasView() {
     o.setTransform(dpr, 0, 0, dpr, 0, 0);
     const api = makeApi();
     if (api) {
-      const t = TOOL_IMPLS[s.springTool ?? s.tool];
+      const t = activeToolImpl(s);
       try {
         t.overlay?.(o, api);
       } catch (err) {
@@ -206,7 +209,7 @@ export function CanvasView() {
         drawMarquee(o, overlay.marquee);
       if (overlay.hud) drawHud(o, overlay.hud.at, overlay.hud.lines);
     }
-    const c = overlay.cursor ?? t0cursor(s.springTool ?? s.tool);
+    const c = overlay.cursor ?? activeToolImpl(s).cursor ?? 'default';
     setCursor((prev) => (prev === c ? prev : c));
     // `schedule` is defined from `render`; it is read through the latest closure at call time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,19 +240,19 @@ export function CanvasView() {
   useEffect(() => schedule(), [size, schedule]);
 
   // Switching tools cancels whatever the previous tool was doing.
-  const prevTool = useRef(activeTool);
+  const prevTool = useRef(impl);
   useEffect(() => {
-    if (prevTool.current !== activeTool) {
+    if (prevTool.current !== impl) {
       const api = makeApi();
-      if (api) TOOL_IMPLS[prevTool.current].cancel?.(api);
+      if (api) prevTool.current.cancel?.(api);
       overlay.guides = [];
       overlay.hud = null;
       overlay.marquee = null;
       overlay.cursor = null;
-      prevTool.current = activeTool;
+      prevTool.current = impl;
       schedule();
     }
-  }, [activeTool, makeApi, schedule]);
+  }, [impl, makeApi, schedule]);
 
   // ---- Pointer -----------------------------------------------------------------------------
   const toPointer = (
@@ -281,7 +284,7 @@ export function CanvasView() {
   /** Drop whatever the tool was doing (a second finger landed, or the system took the touch). */
   const abandon = () => {
     const api = makeApi();
-    const tool = TOOL_IMPLS[activeTool];
+    const tool = impl;
     if (pointer.current && api) (tool.abortPress ?? tool.cancel)?.call(tool, api);
     if (gestureActive()) cancelGesture();
     pointer.current = null;
@@ -345,7 +348,7 @@ export function CanvasView() {
     const ab = artboardAt(api.doc, p.world);
     if (ab && ab.id !== api.od.activeArtboard && !api.od.isolation) setActiveArtboard(ab.id);
     try {
-      TOOL_IMPLS[activeTool].down?.(p, makeApi()!);
+      activeToolImpl(getState()).down?.(p, makeApi()!);
     } catch (err) {
       console.error(err);
     }
@@ -386,11 +389,11 @@ export function CanvasView() {
     }
     window.dispatchEvent(new CustomEvent('curvesmith:cursor', { detail: p.world }));
     try {
-      TOOL_IMPLS[activeTool].move?.(p, api);
+      activeToolImpl(getState()).move?.(p, api);
     } catch (err) {
       console.error(err);
     }
-    const c = overlay.cursor ?? t0cursor(activeTool);
+    const c = overlay.cursor ?? impl.cursor ?? 'default';
     if (c !== cursor) setCursor(c);
   };
 
@@ -412,7 +415,7 @@ export function CanvasView() {
     if (releaseTouch(e)) return;
     if (panning.current) {
       panning.current = null;
-      setCursor(overlay.cursor ?? t0cursor(activeTool));
+      setCursor(overlay.cursor ?? impl.cursor ?? 'default');
       return;
     }
     const prev = pointer.current;
@@ -422,7 +425,7 @@ export function CanvasView() {
     const p = toPointer(e, prev, api.view);
     p.dragging = false;
     try {
-      TOOL_IMPLS[activeTool].up?.(p, api);
+      activeToolImpl(getState()).up?.(p, api);
     } catch (err) {
       console.error(err);
     }
@@ -436,7 +439,7 @@ export function CanvasView() {
         lastTap.current = null;
         syntheticDbl.current = performance.now();
         const next = makeApi();
-        if (next) TOOL_IMPLS[activeTool].dblclick?.(toPointer(e, null, next.view), next);
+        if (next) activeToolImpl(getState()).dblclick?.(toPointer(e, null, next.view), next);
       } else lastTap.current = { t: now, at: p.screen };
     }
     schedule();
@@ -448,13 +451,13 @@ export function CanvasView() {
     const api = makeApi();
     if (!api) return;
     const p = toPointer(e as unknown as PointerEvent, null, api.view);
-    TOOL_IMPLS[activeTool].dblclick?.(p, api);
+    activeToolImpl(getState()).dblclick?.(p, api);
     schedule();
   };
 
   const onPointerLeave = () => {
     const api = makeApi();
-    if (api) TOOL_IMPLS[activeTool].leave?.(api);
+    if (api) activeToolImpl(getState()).leave?.(api);
     if (overlay.hoverId) {
       overlay.hoverId = null;
       schedule();
@@ -640,10 +643,6 @@ function ArtboardLabel({
       )}
     </div>
   );
-}
-
-function t0cursor(tool: string): string {
-  return TOOL_IMPLS[tool as keyof typeof TOOL_IMPLS]?.cursor ?? 'default';
 }
 
 function drawChecker(

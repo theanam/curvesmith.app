@@ -29,6 +29,7 @@ import {
   ROTATE_CURSOR,
 } from './common';
 import { enterGroup } from '../state/actions';
+import { startCrop } from '../state/crop';
 import {
   beginShapeWidget,
   dragShapeWidget,
@@ -318,6 +319,10 @@ export const moveTool: Tool = {
     if (n.type === 'text') {
       select([n.id]);
       setState({ editingText: n.id });
+      return;
+    }
+    if (n.type === 'image') {
+      startCrop(n.id);
       return;
     }
     if (

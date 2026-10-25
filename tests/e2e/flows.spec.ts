@@ -246,6 +246,41 @@ test('the start screen does not scroll when its content fits, and scrolls at the
   expect(m.right).toBe(1728);
 });
 
+test('crops a placed image on canvas and resets it', async ({ app: page }) => {
+  await newA4(page);
+  // A 200×200 PNG, left half red, right half blue.
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 200;
+    const x = c.getContext('2d')!;
+    x.fillStyle = '#e5484d';
+    x.fillRect(0, 0, 100, 200);
+    x.fillStyle = '#3b82f6';
+    x.fillRect(100, 0, 100, 200);
+    const blob: Blob = await new Promise((r) => c.toBlob((b) => r(b!), 'image/png'));
+    const io = '/src/state/io.ts';
+    const { placeFiles } = await import(/* @vite-ignore */ io);
+    await placeFiles([new File([blob], 'halves.png', { type: 'image/png' })]);
+  });
+  const img = 'od.doc.artboards[0].children[0]';
+  const center = await state<[number, number]>(page, `window.__curvesmith.centerOf(${img}.id)`);
+  await page.mouse.dblclick(center[0], center[1]);
+  await expect(page.getByText('Crop image', { exact: true })).toBeVisible();
+  // Drag the right edge to the middle: only the red half stays.
+  const half = await state<number>(page, `(${img}.width * od.view.zoom) / 2`);
+  await page.mouse.move(center[0] + half, center[1]);
+  await page.mouse.down();
+  await page.mouse.move(center[0], center[1], { steps: 6 });
+  await page.mouse.up();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => state<boolean>(page, 'c.getState().croppingImage === null')).toBe(true);
+  await expect.poll(() => state<number>(page, `Math.round(${img}.crop.width)`)).toBe(100);
+  expect(await state<number>(page, `Math.round(${img}.crop.x)`)).toBe(0);
+  await page.locator('[data-action="crop-image"]').waitFor();
+  await page.getByRole('button', { name: 'Reset crop' }).click();
+  await expect.poll(() => state<unknown>(page, `${img}.crop ?? null`)).toBeNull();
+});
+
 test('the toolbar Place image button places a picked image', async ({ app: page }) => {
   await newA4(page);
   const png = Buffer.from(

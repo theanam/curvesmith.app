@@ -150,6 +150,17 @@ export function HelpPage() {
       ),
     },
     {
+      icon: 'crop',
+      title: 'Crop images',
+      body: (
+        <ul>
+          <li>Double-click a placed image, or choose Crop in the inspector or the Object menu.</li>
+          <li>Drag the edges to crop; ⇧ keeps proportions. Drag the photo to reposition it in the frame.</li>
+          <li>Press Return or click away when done. Reset crop brings back the whole picture.</li>
+        </ul>
+      ),
+    },
+    {
       icon: 'wand',
       title: 'Image Trace',
       body: (

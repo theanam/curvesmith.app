@@ -15,7 +15,7 @@ import type {
   TextNode,
   Unit,
 } from '../../core/types';
-import { getState, mutate, setUi, useActiveDoc, type OpenDoc } from '../../state/store';
+import { getState, mutate, setUi, useActiveDoc, useEditor, type OpenDoc } from '../../state/store';
 import { ShapeGlyph, ShapeList } from '../shapes/ShapePicker';
 import { defaultParams, isMultiShape, shapeDef, type ShapeToolKind } from '../../core/shapeCatalog';
 import { childrenOf, locate, typeLabel } from '../../core/document';
@@ -33,6 +33,7 @@ import { ColorPopover } from './ColorPicker';
 import { cssColor } from '../../core/color';
 import { detachInstance } from '../../state/extra';
 import { openTrace } from '../../state/trace';
+import { endCrop, resetCrop, startCrop } from '../../state/crop';
 import { GridSection, GuidesSection } from './GridGuides';
 import { Segmented } from '../controls/Segmented';
 
@@ -618,6 +619,7 @@ function ShapeKindPicker({
 }
 
 function ShapeSection({ od }: { od: OpenDoc }) {
+  const cropping = useEditor((s) => s.croppingImage);
   if (od.selection.length !== 1) return null;
   const n = locate(od.doc, od.selection[0])?.node;
   if (!n) return null;
@@ -939,6 +941,20 @@ function ShapeSection({ od }: { od: OpenDoc }) {
         <div className="muted" style={{ fontSize: 12 }}>
           {Math.round(im.width)} × {Math.round(im.height)} pt
         </div>
+        <div className="grid2">
+          <button
+            className="small-btn"
+            data-action="crop-image"
+            aria-pressed={cropping === im.id}
+            disabled={im.locked}
+            onClick={() => (cropping === im.id ? endCrop() : startCrop(im.id))}
+          >
+            <Icon name="crop" size={14} /> {cropping === im.id ? 'Done' : 'Crop'}
+          </button>
+          <button className="small-btn" disabled={!im.crop} onClick={() => resetCrop(im.id)}>
+            Reset crop
+          </button>
+        </div>
         <button className="small-btn" data-action="trace-image" onClick={() => openTrace(im.id)}>
           <Icon name="wand" size={14} /> Trace image…
         </button>
@@ -983,11 +999,7 @@ function DocumentSection({ od }: { od: OpenDoc }) {
           <h3>Artboard</h3>
           <div className="actions">
             <Tip label="Add artboard">
-              <button
-                className="icon-btn sm"
-                aria-label="Add artboard"
-                onClick={() => A.addArtboard()}
-              >
+              <button className="icon-btn sm" aria-label="Add artboard" onClick={() => A.addArtboard()}>
                 <Icon name="plus" />
               </button>
             </Tip>

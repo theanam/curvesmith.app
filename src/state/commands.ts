@@ -23,6 +23,7 @@ import { exportAgain, placeImage, printDocument } from './io';
 import { navigate } from '../ui/router';
 import { createOutlines, makeSymbol } from './extra';
 import { openTrace, selectedImage } from './trace';
+import { canCrop, resetCrop, startCrop } from './crop';
 import { addGuide, clearGuides, guideCount } from './guides';
 
 export type Category = 'File' | 'Edit' | 'Object' | 'Type' | 'View' | 'Help' | 'Tool';
@@ -452,6 +453,24 @@ export const COMMANDS: Command[] = [
     keywords: 'vectorize vectorise bitmap raster photo convert',
     run: () => openTrace(),
     enabled: () => !!selectedImage(),
+    doc: true,
+  },
+  {
+    id: 'object.cropImage',
+    title: 'Crop image',
+    category: 'Object',
+    keywords: 'trim photo bitmap frame',
+    run: () => startCrop(),
+    enabled: () => canCrop(selectedImage()),
+    doc: true,
+  },
+  {
+    id: 'object.resetCrop',
+    title: 'Reset crop',
+    category: 'Object',
+    keywords: 'uncrop photo bitmap',
+    run: () => resetCrop(),
+    enabled: () => !!selectedImage()?.crop,
     doc: true,
   },
   {
@@ -972,6 +991,7 @@ export const MENUS: { label: string; items: (string | '-')[] }[] = [
       'object.releaseCompoundPath',
       'object.clip',
       'object.outlineStroke',
+      'object.cropImage',
       'object.traceImage',
       'object.join',
       'object.simplify',

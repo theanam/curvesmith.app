@@ -15,6 +15,7 @@ import { FontFamilyPicker, FontStylePicker } from '../fonts/FontPicker';
 import { fontsInUse } from '../../fonts/loader';
 import { Icon } from '../icons';
 import { Tip } from '../controls/Tooltip';
+import { endCrop, resetCrop } from '../../state/crop';
 
 const SNAPS: { key: keyof Snapping; label: string }[] = [
   { key: 'nodes', label: 'Nodes' },
@@ -317,18 +318,45 @@ function ToolOptions({ tool }: { tool: ReturnType<typeof getState>['tool'] }) {
   return <Hint text={def.hint} />;
 }
 
+function CropOptions({ id }: { id: string }) {
+  const od = useActiveDoc();
+  const n = od ? locate(od.doc, id)?.node : null;
+  const cropped = n?.type === 'image' && !!n.crop;
+  return (
+    <div className="group">
+      <strong style={{ fontWeight: 600 }}>Crop image</strong>
+      <div className="sep-v" />
+      <button className="ctx-btn" onClick={endCrop}>
+        <Icon name="check" size={14} /> Done
+      </button>
+      <button className="ctx-btn" disabled={!cropped} onClick={() => resetCrop(id)}>
+        Reset
+      </button>
+      <div className="sep-v" />
+      <Hint text="Drag the edges to crop · drag the photo to reposition · ⇧ keeps proportions · ↵ finishes" />
+    </div>
+  );
+}
+
 export function ContextBar() {
   const tool = useEditor((s) => s.springTool ?? s.tool);
   useEditor((s) => s.docs.find((d) => d.key === s.activeKey)?.doc);
   useEditor((s) => s.docs.find((d) => d.key === s.activeKey)?.selection);
   const snapping = useEditor((s) => s.snapping);
+  const cropping = useEditor((s) => (s.springTool ? null : s.croppingImage));
   const def = toolDef(tool);
   return (
     <div className="contextbar" role="toolbar" aria-label="Tool options">
-      <strong style={{ fontWeight: 600 }}>{def.label} tool</strong>
-      <span className="kbd">{def.shortcut}</span>
-      <div className="sep-v" />
-      <ToolOptions tool={tool} />
+      {cropping ? (
+        <CropOptions id={cropping} />
+      ) : (
+        <>
+          <strong style={{ fontWeight: 600 }}>{def.label} tool</strong>
+          <span className="kbd">{def.shortcut}</span>
+          <div className="sep-v" />
+          <ToolOptions tool={tool} />
+        </>
+      )}
       <div style={{ flex: 1 }} />
       <span className="muted">Snap</span>
       <div className="row" style={{ gap: 4 }}>

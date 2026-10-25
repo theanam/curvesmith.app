@@ -305,13 +305,11 @@ const SLIDES: Slide[] = [
     visual: <ShapesArt />,
   },
   {
-    kicker: 'Image Trace',
-    title: 'Turn pictures into vectors',
+    kicker: 'Images',
+    title: 'Crop pictures and turn them into vectors',
     points: [
-      <>
-        Select a placed image and choose Trace image. Presets for logos, illustrations, photos and line art.
-      </>,
-      <>Tune colors, smoothness and corners with a live preview. Corners stay crisp, curves stay smooth.</>,
+      <>Double-click a placed image to crop it. Drag the edges, or drag the photo to reframe it.</>,
+      <>Trace image turns it into vectors, with presets and a live preview. Corners stay crisp.</>,
       <>On-device AI cuts out the subject or upscales small images first. Nothing leaves your computer.</>,
     ],
     visual: <TraceArt />,

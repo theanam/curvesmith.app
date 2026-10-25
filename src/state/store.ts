@@ -125,6 +125,8 @@ export type EditorState = {
   closingKey: string | null;
   /** Text node being edited on canvas. */
   editingText: string | null;
+  /** Image whose crop is being edited on canvas. */
+  croppingImage: string | null;
 };
 
 export const DEFAULT_UI: UiState = {
@@ -164,6 +166,7 @@ const initial: EditorState = {
   dialogArg: null,
   closingKey: null,
   editingText: null,
+  croppingImage: null,
 };
 
 export const useEditor = create<EditorState>(() => initial);
@@ -236,6 +239,7 @@ export function openDocument(doc: CurvsDocument, opts: OpenOptions): string {
     activeKey: key,
     route: 'editor',
     editingText: null,
+    croppingImage: null,
     dialog:
       opts.report && (opts.report.warnings.length || Object.keys(opts.report.notes).length)
         ? 'importReport'
@@ -267,11 +271,17 @@ export function closeDocument(key: string) {
   const docs = s.docs.filter((d) => d.key !== key);
   let activeKey = s.activeKey;
   if (activeKey === key) activeKey = docs[Math.min(idx, docs.length - 1)]?.key ?? null;
-  setState({ docs, activeKey, route: docs.length ? s.route : 'home', editingText: null });
+  setState({
+    docs,
+    activeKey,
+    route: docs.length ? s.route : 'home',
+    editingText: null,
+    croppingImage: null,
+  });
 }
 
 export function setActive(key: string) {
-  setState({ activeKey: key, route: 'editor', editingText: null });
+  setState({ activeKey: key, route: 'editor', editingText: null, croppingImage: null });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -371,6 +381,8 @@ function pruneSelection(doc: CurvsDocument, ids: string[]) {
 
 export function select(ids: string[]) {
   updateActive((d) => ({ ...d, selection: pruneSelection(d.doc, ids), nodeSelection: [] }));
+  const crop = getState().croppingImage;
+  if (crop && !ids.includes(crop)) setState({ croppingImage: null });
 }
 
 export function setNodeSelection(nodeSelection: NodeSelection[]) {
@@ -433,7 +445,7 @@ export function setIsolation(id: string | null) {
 }
 
 export function setTool(tool: ToolId) {
-  setState({ tool, springTool: null, editingText: null });
+  setState({ tool, springTool: null, editingText: null, croppingImage: null });
   if (tool !== 'node') setNodeSelection([]);
 }
 
