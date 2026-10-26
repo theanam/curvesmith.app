@@ -511,3 +511,46 @@ test('uploads a font, uses it on text, outlines it, and embeds it in .curvs', as
   expect(result.shapes).toBeGreaterThan(0);
   expect(result.fonts).toEqual(['Bricolage Grotesque']);
 });
+
+test('right-click menus on the canvas and in Layers', async ({ app: page }) => {
+  await newA4(page);
+  const rect = async (x: number, y: number) => {
+    await page.keyboard.press('m');
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 80, y + 60, { steps: 3 });
+    await page.mouse.up();
+  };
+  await rect(450, 300);
+  await rect(600, 300);
+  await page.keyboard.press('v');
+  await page.keyboard.press('Escape');
+  const menu = page.getByRole('menu', { name: 'Object menu' });
+  // Empty canvas: canvas items, no object items.
+  await page.mouse.click(700, 650, { button: 'right' });
+  await expect(menu.getByRole('menuitem', { name: /Fit artboard/ })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Delete/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  // Right-clicking an object selects it and offers object commands.
+  await page.mouse.click(490, 330, { button: 'right' });
+  await expect.poll(() => state<number>(page, 'od.selection.length')).toBe(1);
+  await menu.getByRole('menuitem', { name: /^Delete/ }).click();
+  await expect.poll(() => state<number>(page, 'od.doc.artboards[0].children.length')).toBe(1);
+  // Layers: group via the canvas menu, then ungroup and rename from a layer row.
+  await page.keyboard.press(`${mod}+a`);
+  await page.keyboard.press(`${mod}+g`);
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0].type')).toBe('group');
+  await page.getByRole('treeitem', { name: /Group/ }).click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: /^Ungroup/ }).click();
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0].type')).toBe('rect');
+  await page
+    .getByRole('treeitem', { name: /Rectangle/ })
+    .first()
+    .click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: 'Rename' }).click();
+  const name = page.getByRole('textbox', { name: 'Layer name' });
+  await expect(name).toBeFocused();
+  await name.fill('Card');
+  await name.press('Enter');
+  await expect.poll(() => state<string>(page, 'od.doc.artboards[0].children[0].name')).toBe('Card');
+});

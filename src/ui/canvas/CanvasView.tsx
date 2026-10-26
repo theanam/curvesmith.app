@@ -13,6 +13,7 @@ import {
   setIsolation,
   gestureActive,
   cancelGesture,
+  select,
 } from '../../state/store';
 import { getInput, markTouch, setPointerType } from '../../state/input';
 import { TouchBar } from './TouchBar';
@@ -28,7 +29,8 @@ import { multiply } from '../../core/matrix';
 import { onPathKitReady } from '../../core/booleans';
 import { onFontLoaded } from '../../fonts/loader';
 import { cssColor } from '../../core/color';
-import { artboardAt } from '../../render/hittest';
+import { artboardAt, hitTest } from '../../render/hittest';
+import { openSelectionMenu } from '../controls/SelectionMenu';
 import { Rulers } from './Rulers';
 import { TextEditor } from './TextEditor';
 import { placeFiles } from '../../state/io';
@@ -455,6 +457,20 @@ export function CanvasView() {
     schedule();
   };
 
+  /** Right-click: the object under the pointer joins the menu's scope unless it is already selected. */
+  const onContextMenu = (e: React.MouseEvent) => {
+    // Text being edited keeps the browser's own menu.
+    if ((e.target as Element).closest('textarea, input, [contenteditable]')) return;
+    e.preventDefault();
+    const api = makeApi();
+    if (!api) return;
+    const r = hostRef.current!.getBoundingClientRect();
+    const world = toWorld(api.view, [e.clientX - r.left, e.clientY - r.top]);
+    const hit = hitTest(api.doc, world, api.px(4), { isolation: api.od.isolation });
+    if (hit && !api.od.selection.includes(hit.node.id)) select([hit.node.id]);
+    openSelectionMenu([e.clientX, e.clientY]);
+  };
+
   const onPointerLeave = () => {
     const api = makeApi();
     if (api) activeToolImpl(getState()).leave?.(api);
@@ -554,7 +570,7 @@ export function CanvasView() {
         onPointerCancel={onPointerCancel}
         onPointerLeave={onPointerLeave}
         onDoubleClick={onDoubleClick}
-        onContextMenu={(e) => e.preventDefault()}
+        onContextMenu={onContextMenu}
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
       >

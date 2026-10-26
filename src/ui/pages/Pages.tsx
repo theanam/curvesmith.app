@@ -150,6 +150,20 @@ export function HelpPage() {
       ),
     },
     {
+      icon: 'more',
+      title: 'Right-click menus',
+      body: (
+        <ul>
+          <li>
+            Right-click an object on the canvas or a row in Layers for its actions: arrange, align, combine,
+            group, lock and more.
+          </li>
+          <li>Right-click empty canvas to paste, select all, zoom or toggle rulers, guides and the grid.</li>
+          <li>In Layers, the menu also renames the item.</li>
+        </ul>
+      ),
+    },
+    {
       icon: 'crop',
       title: 'Crop images',
       body: (

@@ -834,6 +834,11 @@ svg.icon {
   min-height: 26px;
 }
 
+.align-row {
+  display: flex;
+  justify-content: space-between;
+}
+
 .insp-head .actions {
   display: flex;
   gap: 2px;

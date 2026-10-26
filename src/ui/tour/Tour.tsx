@@ -288,7 +288,7 @@ const SLIDES: Slide[] = [
     points: [
       <>Snap to edges, centers, nodes, guides and the pixel grid. Guides say what they snapped to.</>,
       <>Drag a guide out of a ruler; drag it back to remove it. ⌘' shows the grid.</>,
-      <>Double-click a group to edit inside it.</>,
+      <>Double-click a group to edit inside it. Right-click anything for its actions.</>,
     ],
     visual: shot('node-tool', 'Editing a wave with the Node tool, showing handles and a smart guide'),
   },

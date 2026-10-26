@@ -16,6 +16,7 @@ import { Icon } from '../icons';
 import { NodeIcon } from './Design';
 import { Tip } from '../controls/Tooltip';
 import { inDocOrder } from '../../state/actions';
+import { openSelectionMenu } from '../controls/SelectionMenu';
 
 type Drop = { id: string; where: 'before' | 'after' | 'inside' } | null;
 
@@ -127,6 +128,15 @@ function Row({
           }
         }}
         onDoubleClick={() => setRenaming(true)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setActiveArtboard(ab.id);
+          if (!selected) {
+            if (parentId && od.isolation !== parentId) setIsolation(null);
+            select([n.id]);
+          }
+          openSelectionMenu([e.clientX, e.clientY], [{ label: 'Rename', onSelect: () => setRenaming(true) }]);
+        }}
       >
         {kids.length ? (
           <button

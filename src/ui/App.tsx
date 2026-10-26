@@ -22,6 +22,7 @@ import { CanvasView, currentToolApi, requestCanvasRender } from './canvas/Canvas
 import { Inspector } from './inspector/Inspector';
 import { Home } from './home/Home';
 import { ErrorBoundary } from './ErrorBoundary';
+import { SelectionMenu } from './controls/SelectionMenu';
 import { TipProvider } from './controls/Tooltip';
 import { Palette } from './dialogs/Palette';
 import { NewDocumentDialog } from './dialogs/NewDocument';
@@ -269,6 +270,9 @@ function Editor() {
           <StatusBar />
         </ErrorBoundary>
       )}
+      <ErrorBoundary region="object menu">
+        <SelectionMenu />
+      </ErrorBoundary>
     </div>
   );
 }

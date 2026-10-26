@@ -227,12 +227,8 @@ function TransformSection({ od }: { od: OpenDoc }) {
   const L = (u: Unit) => u;
   return (
     <section className="insp-section">
-      <div className="insp-head">
-        <h3>Transform</h3>
-        <div className="actions">
-          <AlignButtons count={ids.length} />
-        </div>
-      </div>
+      <h3>Transform</h3>
+      <AlignButtons count={ids.length} />
       <div className="wh-row">
         <NumberField
           label="X"
@@ -325,8 +321,8 @@ function TransformSection({ od }: { od: OpenDoc }) {
   );
 }
 
+/** Align and distribute. One object aligns to the artboard; several align to each other. */
 function AlignButtons({ count }: { count: number }) {
-  const [to, setTo] = useState<A.AlignTo>('selection');
   const btn = (icon: IconName, label: string, fn: () => void, disabled = false) => (
     <Tip label={label}>
       <button className="icon-btn sm" aria-label={label} onClick={fn} disabled={disabled}>
@@ -335,47 +331,16 @@ function AlignButtons({ count }: { count: number }) {
     </Tip>
   );
   return (
-    <>
-      {btn('alignLeft', 'Align left', () => A.align('left', to))}
-      {btn('alignHCenter', 'Align center', () => A.align('hcenter', to))}
-      {btn('alignRight', 'Align right', () => A.align('right', to))}
+    <div className="align-row" role="group" aria-label="Align">
+      {btn('alignLeft', 'Align left', () => A.align('left'))}
+      {btn('alignHCenter', 'Align center', () => A.align('hcenter'))}
+      {btn('alignRight', 'Align right', () => A.align('right'))}
+      {btn('alignTop', 'Align top', () => A.align('top'))}
+      {btn('alignVCenter', 'Align middle', () => A.align('vcenter'))}
+      {btn('alignBottom', 'Align bottom', () => A.align('bottom'))}
       {btn('distributeH', 'Distribute horizontally', () => A.distribute('h'), count < 3)}
-      <M.Root modal={false}>
-        <M.Trigger asChild>
-          <button className="icon-btn sm" aria-label="More alignment">
-            <Icon name="chevronDown" size={14} />
-          </button>
-        </M.Trigger>
-        <M.Portal>
-          <M.Content className="menu-content" align="end" sideOffset={4}>
-            <M.Item className="menu-item" onSelect={() => A.align('top', to)}>
-              <Icon name="alignTop" /> Align top
-            </M.Item>
-            <M.Item className="menu-item" onSelect={() => A.align('vcenter', to)}>
-              <Icon name="alignVCenter" /> Align middle
-            </M.Item>
-            <M.Item className="menu-item" onSelect={() => A.align('bottom', to)}>
-              <Icon name="alignBottom" /> Align bottom
-            </M.Item>
-            <M.Item className="menu-item" disabled={count < 3} onSelect={() => A.distribute('v')}>
-              <Icon name="distributeV" /> Distribute vertically
-            </M.Item>
-            <M.Separator className="menu-sep" />
-            {(['selection', 'artboard', 'key'] as const).map((k) => (
-              <M.CheckboxItem
-                key={k}
-                className="menu-item"
-                checked={to === k}
-                onCheckedChange={() => setTo(k)}
-              >
-                Align to {k === 'key' ? 'key object' : k}
-                {to === k && <Icon name="check" size={14} style={{ marginLeft: 'auto' }} />}
-              </M.CheckboxItem>
-            ))}
-          </M.Content>
-        </M.Portal>
-      </M.Root>
-    </>
+      {btn('distributeV', 'Distribute vertically', () => A.distribute('v'), count < 3)}
+    </div>
   );
 }
 
